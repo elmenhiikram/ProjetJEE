@@ -36,11 +36,7 @@ public class Produit {
     @Column(name = "quantite")
     private Integer quantite;
 
-<<<<<<< HEAD
     @Column(name = "product_rank")
-=======
-    @Column(name = "rank")
->>>>>>> 8d1c0e206745bd8490f5602ea185a176817a96f0
     private Integer rank;
 
     @Column(name = "rating")

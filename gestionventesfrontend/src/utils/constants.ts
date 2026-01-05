@@ -1,9 +1,5 @@
 // API Constants
-<<<<<<< HEAD
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9090/api';
-=======
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
->>>>>>> 8d1c0e206745bd8490f5602ea185a176817a96f0
 
 // Pagination
 export const ITEMS_PER_PAGE = 10;

@@ -18,10 +18,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.2",
-<<<<<<< HEAD
     "recharts": "^3.6.0",
-=======
->>>>>>> 8d1c0e206745bd8490f5602ea185a176817a96f0
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
@@ -29,10 +26,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
-<<<<<<< HEAD
     "@types/recharts": "^1.8.29",
-=======
->>>>>>> 8d1c0e206745bd8490f5602ea185a176817a96f0
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.23",
     "eslint": "^9.39.1",

@@ -61,26 +61,14 @@ const DashboardRedirect = () => {
 
 const App = () => {
   console.log('🚀 App component is rendering...');
-<<<<<<< HEAD
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    window.location.href = '/login';
-  };
-  
   return (
     <Router
       future={{
         v7_startTransition: true,
-        v7_relativeSplatPath: true
+        v7_relativeSplatPath: true,
       }}
     >
-=======
-  
-  return (
-    <Router>
->>>>>>> 8d1c0e206745bd8490f5602ea185a176817a96f0
       <AuthProvider>
         <Routes>
           {/* ================= PUBLIC ================= */}
@@ -213,8 +201,4 @@ const App = () => {
   );
 };
 
-<<<<<<< HEAD
 export default App;
-=======
-export default App;
->>>>>>> 8d1c0e206745bd8490f5602ea185a176817a96f0

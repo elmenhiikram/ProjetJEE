@@ -1,21 +1,17 @@
 package com.gestionVentesBackend.Controller;
 
-<<<<<<< HEAD
 import com.gestionVentesBackend.Service.DashboardService;
-=======
->>>>>>> 8d1c0e206745bd8490f5602ea185a176817a96f0
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-<<<<<<< HEAD
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping({"/api/dashboard", "/dashboard"})
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "http://localhost:4200"})
 public class DashboardController {
 
@@ -152,65 +148,3 @@ public class DashboardController {
         return "Critique";
     }
 }
-=======
-import com.gestionVentesBackend.Repository.*;
-
-import java.util.HashMap;
-import java.util.Map;
-
-@RestController
-@RequestMapping("/dashboard")
-@CrossOrigin(origins = "http://localhost:5173")
-public class DashboardController {
-
-    @Autowired
-    private VenteRepository venteRepository;
-
-    @Autowired
-    private ProduitRepository produitRepository;
-
-    @Autowired
-    private ClientRepository clientRepository;
-
-    @Autowired
-    private EmployeRepository employeRepository;
-
-    @Autowired
-    private InvestissementRepository investissementRepository;
-
-    @GetMapping("/stats")
-    public ResponseEntity<Map<String, Object>> getDashboardStats() {
-        Map<String, Object> stats = new HashMap<>();
-        
-        try {
-            long totalSales = venteRepository.count();
-            long totalProducts = produitRepository.count();
-            long totalClients = clientRepository.count();
-            long totalEmployees = employeRepository.count();
-            long totalInvestments = investissementRepository.count();
-            
-            // Calcul du revenu total (somme de quantité * prix des produits)
-            Double totalRevenue = venteRepository.findAll().stream()
-                .mapToDouble(vente -> {
-                    if (vente.getProduit() != null && vente.getProduit().getPrix() != null && vente.getQuantite() != null) {
-                        return vente.getProduit().getPrix() * vente.getQuantite();
-                    }
-                    return 0.0;
-                })
-                .sum();
-            
-            stats.put("totalSales", totalSales);
-            stats.put("totalRevenue", totalRevenue);
-            stats.put("totalProducts", totalProducts);
-            stats.put("totalClients", totalClients);
-            stats.put("totalEmployees", totalEmployees);
-            stats.put("totalInvestments", totalInvestments);
-            
-            return ResponseEntity.ok(stats);
-        } catch (Exception e) {
-            stats.put("error", "Erreur lors de la récupération des statistiques: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(stats);
-        }
-    }
-}
->>>>>>> 8d1c0e206745bd8490f5602ea185a176817a96f0

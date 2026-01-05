@@ -26,9 +26,12 @@ import {
   ChevronRight,
   Monitor,
   Wifi,
+  Search,
+  X,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { productApi } from "../api/productApi"
+import { categoryApi } from "../api/categoryApi"
 
 interface Product {
   id: number
@@ -42,24 +45,36 @@ interface Product {
     nom: string
   }
   rating?: number
+  nombreVentes?: number
+}
+
+interface Category {
+  id?: number
+  nom: string
+  description?: string
 }
 
 export default function LandingPage() {
   const navigate = useNavigate()
 
   const [products, setProducts] = useState<Product[]>([])
+  const [allProducts, setAllProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState({ days: 15, hours: 10, mins: 56, secs: 54 })
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
+  const [topProduct, setTopProduct] = useState<Product | null>(null)
 
-  const categories = [
-    { name: "Phones", icon: Smartphone, color: "from-blue-500 to-cyan-500" },
-    { name: "Computers", icon: Laptop, color: "from-purple-500 to-pink-500" },
-    { name: "Accessories", icon: Headphones, color: "from-orange-500 to-red-500" },
-    { name: "Laptops", icon: Laptop, color: "from-green-500 to-emerald-500" },
-    { name: "Monitors", icon: Monitor, color: "from-yellow-500 to-orange-500" },
-    { name: "Networking", icon: Wifi, color: "from-indigo-500 to-purple-500" },
-    { name: "PC Gaming", icon: Gamepad2, color: "from-teal-500 to-cyan-500" },
+  const defaultCategories = [
+    { id: 1, name: "Phones", icon: Smartphone, color: "from-blue-500 to-cyan-500" },
+    { id: 2, name: "Computers", icon: Laptop, color: "from-purple-500 to-pink-500" },
+    { id: 3, name: "Accessories", icon: Headphones, color: "from-orange-500 to-red-500" },
+    { id: 4, name: "Laptops", icon: Laptop, color: "from-green-500 to-emerald-500" },
+    { id: 5, name: "Monitors", icon: Monitor, color: "from-yellow-500 to-orange-500" },
+    { id: 6, name: "Networking", icon: Wifi, color: "from-indigo-500 to-purple-500" },
+    { id: 7, name: "PC Gaming", icon: Gamepad2, color: "from-teal-500 to-cyan-500" },
   ]
 
   const features = [
@@ -86,65 +101,71 @@ export default function LandingPage() {
   ]
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true)
-        const response = await productApi.getAll()
-        // Limiter à 8 produits pour la landing page
-        const productsData: Product[] = Array.isArray(response.data) 
-          ? response.data.filter((p) => p.id !== undefined).slice(0, 8) as Product[]
+        
+        // Charger les produits
+        const productsResponse = await productApi.getAll()
+        const productsData: Product[] = Array.isArray(productsResponse.data) 
+          ? productsResponse.data.filter((p) => p.id !== undefined) as Product[]
           : []
+        
+        setAllProducts(productsData)
         setProducts(productsData)
+        
+        // Trouver le produit le plus vendu
+        const mostSoldProduct = productsData.reduce((prev, current) => {
+          return (current.nombreVentes || 0) > (prev.nombreVentes || 0) ? current : prev
+        }, productsData[0] || null)
+        setTopProduct(mostSoldProduct)
+        
+        // Charger les catégories
+        try {
+          const categoriesResponse = await categoryApi.getAll()
+          const categoriesData: Category[] = Array.isArray(categoriesResponse.data)
+            ? categoriesResponse.data
+            : []
+          setCategories(categoriesData)
+        } catch (catError) {
+          console.warn('Catégories non disponibles, utilisation des catégories par défaut')
+          setCategories([])
+        }
+        
         setError(null)
       } catch (err) {
-        console.error('Erreur lors de la récupération des produits:', err)
-        setError('Impossible de charger les produits.')
-        // Fallback avec produits par défaut
-        setProducts([
-          {
-            id: 1,
-            nom: "Casque Sans Fil Pro",
-            description: "Son premium avec réduction de bruit active",
-            prix: 299,
-            rating: 4.8,
-            quantite: 15,
-            image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
-          },
-          {
-            id: 2,
-            nom: "Montre Connectée Ultra",
-            description: "Suivi santé avancé et surveillance fitness",
-            prix: 449,
-            rating: 4.9,
-            quantite: 8,
-            image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
-          },
-          {
-            id: 3,
-            nom: "Caméra Action 4K",
-            description: "Capturez les moments de la vie en détails époustouflants",
-            prix: 379,
-            rating: 4.7,
-            quantite: 12,
-            image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&h=400&fit=crop",
-          },
-          {
-            id: 4,
-            nom: "Laptop Gaming Pro",
-            description: "Performances gaming haute puissance en déplacement",
-            prix: 1499,
-            rating: 4.9,
-            quantite: 5,
-            image: "https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=400&h=400&fit=crop",
-          },
-        ])
+        console.error('Erreur lors de la récupération des données:', err)
+        setError('Impossible de charger les données.')
+        setProducts([])
+        setAllProducts([])
+        setCategories([])
       } finally {
         setLoading(false)
       }
     }
 
-    fetchProducts()
+    fetchData()
   }, [])
+
+  // Filtrer les produits en fonction de la recherche et de la catégorie
+  useEffect(() => {
+    let filtered = [...allProducts]
+    
+    // Filtrer par recherche
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(product =>
+        product.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+    
+    // Filtrer par catégorie
+    if (selectedCategory !== null) {
+      filtered = filtered.filter(product => product.categorie?.id === selectedCategory)
+    }
+    
+    setProducts(filtered)
+  }, [searchQuery, selectedCategory, allProducts])
 
   // Countdown timer effect
   useEffect(() => {
@@ -250,6 +271,23 @@ export default function LandingPage() {
               <button className="text-slate-300 font-medium hover:text-blue-400 transition-colors">Contact</button>
             </nav>
 
+            {/* Search Bar */}
+            <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-800/60 rounded-xl border border-slate-700/50 max-w-md">
+              <Search className="w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Rechercher des produits..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent text-white placeholder-slate-400 focus:outline-none w-full"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} className="p-1 hover:bg-slate-700 rounded">
+                  <X className="w-4 h-4 text-slate-400" />
+                </button>
+              )}
+            </div>
+
             {/* Header Icons */}
             <div className="flex items-center gap-4">
               <button className="p-2 text-slate-300 hover:text-blue-400 transition-colors">
@@ -272,20 +310,41 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative py-12 lg:py-20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Mobile Search Bar */}
+          <div className="lg:hidden mb-6">
+            <div className="flex items-center gap-2 px-4 py-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
+              <Search className="w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Rechercher des produits..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent text-white placeholder-slate-400 focus:outline-none w-full"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} className="p-1 hover:bg-slate-700 rounded">
+                  <X className="w-4 h-4 text-slate-400" />
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-full text-sm">
                 <Sparkles className="w-4 h-4 text-red-400" />
-                <span className="text-white text-sm">Collection Premium 2025</span>
+                <span className="text-white text-sm">Produit le Plus Vendu 🔥</span>
               </div>
 
               <h1 className="text-4xl font-black text-white">
-                {products[0]?.nom || "Casque Sans Fil"}
+                {topProduct?.nom || "Chargement..."}
                 <br />
                 <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
                   Premium
                 </span>
               </h1>
+
+              <p className="text-slate-400">{topProduct?.description || ""}</p>
 
               <button
                 onClick={() => navigate('/signup')}
@@ -309,20 +368,20 @@ export default function LandingPage() {
                     <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                   ))}
                 </div>
-                <span className="text-slate-400 text-sm">100+ Avis</span>
+                <span className="text-slate-400 text-sm">{topProduct?.nombreVentes || 0} Ventes</span>
               </div>
             </div>
 
             <div className="relative">
               <div className="absolute top-4 right-4 z-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl px-4 py-2 text-white">
-                <span className="text-xs">À partir de</span>
-                <p className="text-2xl font-black">{products[0]?.prix || 49}€</p>
+                <span className="text-xs">Prix</span>
+                <p className="text-2xl font-black">{topProduct?.prix || 0}€</p>
               </div>
 
               <div className="relative h-80 lg:h-96 rounded-3xl overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
                 <img
-                  src={products[0]?.image || "/placeholder.svg?height=400&width=500"}
-                  alt={products[0]?.nom || "Produit en vedette"}
+                  src={topProduct?.image || "/placeholder.svg?height=400&width=500"}
+                  alt={topProduct?.nom || "Produit le plus vendu"}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -362,27 +421,60 @@ export default function LandingPage() {
                 </span>
               </h2>
             </div>
-            <div className="flex gap-2">
-              <button className="p-2 rounded-full bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:text-white transition-colors">
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button className="p-2 rounded-full bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:text-white transition-colors">
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                selectedCategory === null
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800/60 text-slate-400 hover:text-white'
+              }`}
+            >
+              Toutes
+            </button>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-4">
-            {categories.map((category, index) => (
-              <div key={index} className="group cursor-pointer">
-                <div className="p-6 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 group-hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-1 flex flex-col items-center">
-                  <category.icon className="w-10 h-10 text-slate-400 group-hover:text-blue-400 mb-3 transition-colors" />
-                  <p className="text-xs font-semibold text-slate-300 group-hover:text-white text-center transition-colors">
-                    {category.name}
-                  </p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-4">
+            {categories.length > 0 ? (
+              categories.map((category) => {
+                const defaultCat = defaultCategories.find(dc => dc.name.toLowerCase().includes(category.nom.toLowerCase())) || defaultCategories[0]
+                const Icon = defaultCat.icon
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(selectedCategory === category.id ? null : (category.id ?? null))}
+                    className={`group cursor-pointer transition-all ${
+                      selectedCategory === category.id ? 'scale-105' : ''
+                    }`}
+                  >
+                    <div className={`p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 flex flex-col items-center ${
+                      selectedCategory === category.id
+                        ? 'bg-blue-600/20 border-blue-500/50'
+                        : 'bg-slate-900/60 backdrop-blur-xl border-slate-700/50 hover:border-blue-500/50'
+                    }`}>
+                      <Icon className={`w-10 h-10 mb-3 transition-colors ${
+                        selectedCategory === category.id ? 'text-blue-400' : 'text-slate-400 group-hover:text-blue-400'
+                      }`} />
+                      <p className={`text-xs font-semibold text-center transition-colors ${
+                        selectedCategory === category.id ? 'text-white' : 'text-slate-300 group-hover:text-white'
+                      }`}>
+                        {category.nom}
+                      </p>
+                    </div>
+                  </button>
+                )
+              })
+            ) : (
+              defaultCategories.map((category, index) => (
+                <div key={index} className="group cursor-pointer">
+                  <div className="p-6 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 group-hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-1 flex flex-col items-center">
+                    <category.icon className="w-10 h-10 text-slate-400 group-hover:text-blue-400 mb-3 transition-colors" />
+                    <p className="text-xs font-semibold text-slate-300 group-hover:text-white text-center transition-colors">
+                      {category.name}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -432,7 +524,7 @@ export default function LandingPage() {
 
               <div className="relative h-64 lg:h-80">
                 <img
-                  src={products[0]?.image || "/placeholder.svg?height=320&width=400"}
+                  src={topProduct?.image || "/placeholder.svg?height=320&width=400"}
                   alt="Produit vedette"
                   className="w-full h-full object-contain"
                 />
@@ -457,6 +549,16 @@ export default function LandingPage() {
                   Produits
                 </span>
               </h2>
+              {searchQuery && (
+                <p className="text-slate-400 text-sm mt-2">
+                  {products.length} résultat{products.length !== 1 ? 's' : ''} pour "{searchQuery}"
+                </p>
+              )}
+              {selectedCategory !== null && (
+                <p className="text-slate-400 text-sm mt-2">
+                  Catégorie: {categories.find(c => c.id === selectedCategory)?.nom}
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <button className="p-2 rounded-full bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:text-white transition-colors">
@@ -473,6 +575,26 @@ export default function LandingPage() {
           {loading ? (
             <div className="flex justify-center items-center py-20">
               <Loader className="w-8 h-8 text-blue-400 animate-spin" />
+            </div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-slate-400 text-lg mb-4">
+                {searchQuery || selectedCategory !== null 
+                  ? "Aucun produit trouvé avec ces critères"
+                  : "Aucun produit disponible"
+                }
+              </p>
+              {(searchQuery || selectedCategory !== null) && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("")
+                    setSelectedCategory(null)
+                  }}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl text-white font-semibold transition-all"
+                >
+                  Réinitialiser les filtres
+                </button>
+              )}
             </div>
           ) : (
             <>

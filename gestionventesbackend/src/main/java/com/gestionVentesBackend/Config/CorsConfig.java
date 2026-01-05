@@ -11,18 +11,10 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins(
-                        "http://localhost:5173",
-<<<<<<< HEAD
-                        "http://localhost:5173",
-                        "http://localhost:3000",
-                        "http://localhost:4200",
-                        "http://127.0.0.1:5173",
-                        "http://127.0.0.1:5173",
-=======
-                        "http://localhost:3000",
-                        "http://localhost:4200",
-                        "http://127.0.0.1:5173",
->>>>>>> 8d1c0e206745bd8490f5602ea185a176817a96f0
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "http://localhost:4200",
+                "http://127.0.0.1:5173",
                         "http://127.0.0.1:3000"
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
