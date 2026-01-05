@@ -26,6 +26,9 @@ public class CategorieService {
     }
 
     public Categorie createCategorie(Categorie categorie) {
+        if (categorie.getNom() == null || categorie.getNom().trim().isEmpty()) {
+            throw new RuntimeException("Le nom de la catégorie est obligatoire");
+        }
         return categorieRepository.save(categorie);
     }
 
@@ -33,8 +36,15 @@ public class CategorieService {
         Categorie categorie = categorieRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Catégorie non trouvée"));
         
-        if (categorieDetails.getNom() != null) categorie.setNom(categorieDetails.getNom());
-        if (categorieDetails.getDescription() != null) categorie.setDescription(categorieDetails.getDescription());
+        if (categorieDetails.getNom() != null) {
+            if (categorieDetails.getNom().trim().isEmpty()) {
+                throw new RuntimeException("Le nom de la catégorie ne peut pas être vide");
+            }
+            categorie.setNom(categorieDetails.getNom());
+        }
+        if (categorieDetails.getDescription() != null) {
+            categorie.setDescription(categorieDetails.getDescription());
+        }
         
         return categorieRepository.save(categorie);
     }
@@ -48,6 +58,13 @@ public class CategorieService {
             throw new RuntimeException("Impossible de supprimer cette catégorie car elle a " + 
                 categorie.getInvestissements().size() + " investissement(s) associé(s). " +
                 "Veuillez d'abord supprimer les investissements.");
+        }
+        
+        // Vérifier s'il y a des produits associés
+        if (categorie.getProduits() != null && !categorie.getProduits().isEmpty()) {
+            throw new RuntimeException("Impossible de supprimer cette catégorie car elle contient " + 
+                categorie.getProduits().size() + " produit(s). " +
+                "Veuillez d'abord supprimer ou réassigner les produits.");
         }
         
         categorieRepository.delete(categorie);

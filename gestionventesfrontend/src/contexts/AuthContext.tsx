@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
   id: number;
@@ -46,10 +47,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
+    console.log('🔴 Fonction logout() appelée dans AuthContext');
+    console.log('📊 État actuel user:', user);
+    
+    // Nettoyer l'état local
     setUser(null);
+    console.log('✅ User state mis à null');
+    
+    // Nettoyer le localStorage
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    window.location.href = '/login';
+    console.log('✅ localStorage nettoyé');
+    
+    // Redirection forcée avec rechargement complet
+    console.log('🔄 Redirection vers /login...');
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 100);
   };
 
   const isAuthenticated = !!user;

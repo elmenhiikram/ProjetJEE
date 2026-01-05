@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { saleApi, type Sale } from '../../api/saleApi';
+import { saleApi, type Sale, type SaleRequest } from '../../api/saleApi';
 import { clientApi, type Client } from '../../api/clientApi';
 import { productApi, type Product } from '../../api/productApi';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
@@ -47,17 +47,32 @@ export default function GestionVentes() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const dataToSend: any = {
-        quantite: formData.quantite
-      };
+      // Validation
+      if (!formData.client?.id) {
+        alert('Veuillez sélectionner un client');
+        return;
+      }
+      if (!formData.produit?.id) {
+        alert('Veuillez sélectionner un produit');
+        return;
+      }
+      if (!formData.quantite || formData.quantite <= 0) {
+        alert('La quantité doit être supérieure à 0');
+        return;
+      }
 
-      if (formData.client?.id) {
-        dataToSend.client = { id: formData.client.id };
-      }
-      
-      if (formData.produit?.id) {
-        dataToSend.produit = { id: formData.produit.id };
-      }
+      // Préparer les données au bon format pour le backend (VenteRequestDTO)
+      const now = new Date();
+      const dateVente = editingVente?.dateVente || now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      const heureVente = editingVente?.heureVente || now.toTimeString().split(' ')[0]; // Format: HH:MM:SS
+
+      const dataToSend: SaleRequest = {
+        clientId: formData.client.id,
+        produitId: formData.produit.id,
+        quantite: formData.quantite,
+        dateVente,
+        heureVente
+      };
 
       if (editingVente?.client?.id && editingVente?.produit?.id && editingVente?.dateVente && editingVente?.heureVente) {
         await saleApi.update(
@@ -65,7 +80,7 @@ export default function GestionVentes() {
           editingVente.produit.id,
           editingVente.dateVente,
           editingVente.heureVente,
-          dataToSend
+          dataToSend as any
         );
         alert('Vente modifiée avec succès');
       } else {
@@ -74,9 +89,10 @@ export default function GestionVentes() {
       }
       fetchAll();
       handleCloseModal();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de l\'enregistrement:', error);
-      alert('Erreur lors de l\'enregistrement de la vente');
+      const errorMessage = error.response?.data || error.message || 'Erreur inconnue';
+      alert(`Erreur lors de l'enregistrement de la vente: ${errorMessage}`);
     }
   };
 
@@ -140,7 +156,6 @@ export default function GestionVentes() {
   return (
     <div className="p-6 max-w-full overflow-x-hidden">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-white">Gestion des Ventes</h1>
         <button
           onClick={() => setIsModalOpen(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"

@@ -12,8 +12,8 @@ interface SaleFormProps {
 }
 
 type SaleFormData = {
-  clientId: number;
-  produitId: number;
+  clientId: number | '';
+  produitId: number | '';
   quantite: number;
 };
 
@@ -31,8 +31,8 @@ const getNowIsoTime = () => {
 
 const SaleForm = ({ sale, products, clients, onSubmit, onCancel }: SaleFormProps) => {
   const [formData, setFormData] = useState<SaleFormData>({
-    clientId: sale?.client?.id ?? 0,
-    produitId: sale?.produit?.id ?? 0,
+    clientId: sale?.client?.id ?? '',
+    produitId: sale?.produit?.id ?? '',
     quantite: sale?.quantite ?? 1,
   });
 
@@ -52,11 +52,41 @@ const SaleForm = ({ sale, products, clients, onSubmit, onCancel }: SaleFormProps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.clientId || formData.clientId === '' || formData.clientId === 0) {
+      alert('Veuillez sélectionner un client');
+      return;
+    }
+    if (!formData.produitId || formData.produitId === '' || formData.produitId === 0) {
+      alert('Veuillez sélectionner un produit');
+      return;
+    }
+    if (!formData.quantite || formData.quantite <= 0) {
+      alert('La quantité doit être supérieure à 0');
+      return;
+    }
+    
+    // Check if product has enough stock
+    if (selectedProduct && selectedProduct.quantite !== undefined && selectedProduct.quantite < formData.quantite) {
+      alert(`Stock insuffisant. Stock disponible: ${selectedProduct.quantite}`);
+      return;
+    }
+    
     const dateVente = sale?.dateVente ?? getNowIsoDate();
     const heureVente = sale?.heureVente ?? getNowIsoTime();
+    
+    console.log('Submitting sale:', {
+      clientId: Number(formData.clientId),
+      produitId: Number(formData.produitId),
+      quantite: formData.quantite,
+      dateVente,
+      heureVente,
+    });
+    
     onSubmit({
-      clientId: formData.clientId,
-      produitId: formData.produitId,
+      clientId: Number(formData.clientId),
+      produitId: Number(formData.produitId),
       quantite: formData.quantite,
       dateVente,
       heureVente,
@@ -74,7 +104,7 @@ const SaleForm = ({ sale, products, clients, onSubmit, onCancel }: SaleFormProps
         </label>
         <select
           name="clientId"
-          value={formData.clientId}
+          value={formData.clientId || ''}
           onChange={handleChange}
           required
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -94,7 +124,7 @@ const SaleForm = ({ sale, products, clients, onSubmit, onCancel }: SaleFormProps
         </label>
         <select
           name="produitId"
-          value={formData.produitId}
+          value={formData.produitId || ''}
           onChange={handleChange}
           required
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -120,8 +150,14 @@ const SaleForm = ({ sale, products, clients, onSubmit, onCancel }: SaleFormProps
             onChange={handleChange}
             required
             min="1"
+            max={selectedProduct?.quantite || 999999}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          {selectedProduct && (
+            <p className="text-xs text-gray-500 mt-1">
+              Stock disponible: {selectedProduct.quantite || 0}
+            </p>
+          )}
         </div>
 
         <div>

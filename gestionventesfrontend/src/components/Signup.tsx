@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { authApi } from '../api/authApi';
-import type { SignupRequest } from '../api/authApi';
+import { useSignup } from '../hooks/useSignup';
 
 const Signup = () => {
-    const navigate = useNavigate();
+    const { handleSignup, isLoading, error, success, clearMessages } = useSignup();
     const [formData, setFormData] = useState({
         nom: '',
         prenom: '',
@@ -28,75 +26,50 @@ const Signup = () => {
         password: '',
         confirmPassword: ''
     });
-    const [isLoading, setIsLoading] = useState(false);
-    const [message, setMessage] = useState({ text: '', type: '' });
 
     // Clears message after a delay
     useEffect(() => {
-        if (message.text) {
-            const timer = setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+        if (error || success) {
+            const timer = setTimeout(clearMessages, 5000);
             return () => clearTimeout(timer);
         }
-    }, [message]);
+    }, [error, success, clearMessages]);
 
     // Handle form input changes
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-        if (message.text) setMessage({ text: '', type: '' });
+        if (error || success) clearMessages();
     };
 
-    // Handle Sign Up submission - REAL API CALL
-    const handleSignup = async (e: React.FormEvent) => {
+    // Handle form submission
+    const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
-        setMessage({ text: '', type: '' });
 
         // Validation
         if (formData.password !== formData.confirmPassword) {
-            setMessage({ text: "Les mots de passe ne correspondent pas.", type: 'error' });
-            setIsLoading(false);
+            alert("Les mots de passe ne correspondent pas.");
             return;
         }
 
         if (formData.password.length < 6) {
-            setMessage({ text: "Le mot de passe doit contenir au moins 6 caractères.", type: 'error' });
-            setIsLoading(false);
+            alert("Le mot de passe doit contenir au moins 6 caractères.");
             return;
         }
 
-        try {
-            // Préparer les données pour l'API
-            const { confirmPassword, ...dataToSend } = formData;
-            
-            const signupData: SignupRequest = {
-                nom: dataToSend.nom,
-                prenom: dataToSend.prenom,
-                email: dataToSend.email,
-                password: dataToSend.password,
-                telephone: dataToSend.telephone,
-                adresse: dataToSend.adresse,
-                photoUrl: dataToSend.photoUrl || undefined,
-                userType: dataToSend.userType,
-                role: dataToSend.role || undefined,
-            };
+        // Préparer les données
+        const signupData = {
+            nom: formData.nom,
+            prenom: formData.prenom,
+            email: formData.email,
+            password: formData.password,
+            telephone: formData.telephone || undefined,
+            adresse: formData.adresse || undefined,
+        };
 
-            if (dataToSend.userType === 'investisseur') {
-                signupData.ice = dataToSend.ice || undefined;
-                signupData.nomEntreprise = dataToSend.nomEntreprise || undefined;
-                signupData.adresseEntreprise = dataToSend.adresseEntreprise || undefined;
-                signupData.numeroEntreprise = dataToSend.numeroEntreprise || undefined;
-                signupData.emailEntreprise = dataToSend.emailEntreprise || undefined;
-                signupData.logoUrl = dataToSend.logoUrl || undefined;
-                signupData.domaineEntreprise = dataToSend.domaineEntreprise || undefined;
-                signupData.capitalDisponible = dataToSend.capitalDisponible
-                    ? Number(dataToSend.capitalDisponible)
-                    : undefined;
-            }
-            
-            const result = await authApi.signup(signupData);
-            console.log('✅ Signup successful:', result.data);
-            
-            setMessage({ text: "Inscription réussie ! Redirection vers la connexion...", type: 'success' });
+        await handleSignup(signupData);
+
+        // Reset form si succès
+        if (!error) {
             setFormData({
                 nom: '',
                 prenom: '',
@@ -117,41 +90,30 @@ const Signup = () => {
                 password: '',
                 confirmPassword: ''
             });
-            
-            // Navigate to login after success
-            setTimeout(() => {
-                navigate('/login');
-            }, 2000);
-        } catch (err: any) {
-            const errorMsg = err.response?.data?.error || err.message || "Erreur lors de l'inscription.";
-            setMessage({ 
-                text: errorMsg, 
-                type: 'error' 
-            });
-            console.error('❌ Error:', err);
-        } finally {
-            setIsLoading(false);
         }
     };
+
+    const message = error || success;
+    const messageType = error ? 'error' : 'success';
 
     return (
         <div className="w-full max-w-md bg-slate-950/80 backdrop-blur-xl border border-slate-800/50 p-8 space-y-6 rounded-xl shadow-2xl shadow-black/20">
             {/* Message Box */}
-            {message.text && (
+            {message && (
                 <div
                     className={`p-4 rounded-lg text-sm transition-opacity duration-300 ${
-                        message.type === 'success'
+                        messageType === 'success'
                             ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                             : 'bg-red-500/20 text-red-400 border border-red-500/30'
                     }`}
                     role="alert"
                 >
-                    {message.text}
+                    {message}
                 </div>
             )}
 
-            {/* Signup Form */}
-            <form onSubmit={handleSignup} className="space-y-6">
+            {/* Sign Up Form */}
+            <form onSubmit={onSubmit} className="space-y-6">
                 <h2 className="text-3xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent text-center">Inscription</h2>
 
             {/* User Type Selection: Client or Investor */}

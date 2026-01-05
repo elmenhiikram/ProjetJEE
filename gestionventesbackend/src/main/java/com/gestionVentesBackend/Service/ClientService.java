@@ -30,6 +30,18 @@ public class ClientService {
     }
 
     public Client createClient(Client client) {
+        if (client.getNom() == null || client.getNom().trim().isEmpty()) {
+            throw new RuntimeException("Le nom du client est obligatoire");
+        }
+        if (client.getEmail() == null || client.getEmail().trim().isEmpty()) {
+            throw new RuntimeException("L'email du client est obligatoire");
+        }
+        
+        // Vérifier si l'email existe déjà
+        if (clientRepository.findByEmail(client.getEmail()).isPresent()) {
+            throw new RuntimeException("Un client avec cet email existe déjà");
+        }
+        
         return clientRepository.save(client);
     }
 
@@ -37,10 +49,24 @@ public class ClientService {
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Client non trouvé"));
         
-        // Les champs hérités de Personne peuvent être mis à jour ici
-        if (clientDetails.getNom() != null) client.setNom(clientDetails.getNom());
+        // Validation de l'email si fourni
+        if (clientDetails.getEmail() != null) {
+            if (clientDetails.getEmail().trim().isEmpty()) {
+                throw new RuntimeException("L'email ne peut pas être vide");
+            }
+            // Vérifier si l'email est déjà utilisé par un autre client
+            Optional<Client> existingClient = clientRepository.findByEmail(clientDetails.getEmail());
+            if (existingClient.isPresent() && !existingClient.get().getId().equals(id)) {
+                throw new RuntimeException("Cet email est déjà utilisé par un autre client");
+            }
+            client.setEmail(clientDetails.getEmail());
+        }
+        
+        // Mise à jour des autres champs
+        if (clientDetails.getNom() != null && !clientDetails.getNom().trim().isEmpty()) {
+            client.setNom(clientDetails.getNom());
+        }
         if (clientDetails.getPrenom() != null) client.setPrenom(clientDetails.getPrenom());
-        if (clientDetails.getEmail() != null) client.setEmail(clientDetails.getEmail());
         if (clientDetails.getNumeroTel() != null) client.setNumeroTel(clientDetails.getNumeroTel());
         if (clientDetails.getAddress() != null) client.setAddress(clientDetails.getAddress());
         if (clientDetails.getPhotoUrl() != null) client.setPhotoUrl(clientDetails.getPhotoUrl());

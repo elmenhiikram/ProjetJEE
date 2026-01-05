@@ -83,10 +83,21 @@ public class ProduitController {
         try {
             System.out.println("➕ Création d'un nouveau produit: " + produit.getNom());
             
+            // Validation des champs obligatoires
+            if (produit.getNom() == null || produit.getNom().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Le nom du produit est obligatoire");
+            }
+            if (produit.getPrix() == null || produit.getPrix() <= 0) {
+                return ResponseEntity.badRequest().body("Le prix doit être supérieur à 0");
+            }
+            if (produit.getQuantite() == null || produit.getQuantite() < 0) {
+                return ResponseEntity.badRequest().body("La quantité ne peut pas être négative");
+            }
+            
             // Si une catégorie est fournie avec un ID, charger la catégorie complète
             if (produit.getCategorie() != null && produit.getCategorie().getId() != null) {
                 Categorie categorie = categorieRepository.findById(produit.getCategorie().getId())
-                        .orElseThrow(() -> new RuntimeException("Catégorie non trouvée"));
+                        .orElseThrow(() -> new RuntimeException("Catégorie non trouvée avec l'ID: " + produit.getCategorie().getId()));
                 produit.setCategorie(categorie);
             }
             
@@ -107,11 +118,29 @@ public class ProduitController {
             System.out.println("🔄 Mise à jour du produit ID: " + id);
             return produitRepository.findById(id)
                     .map(produit -> {
-                        if (produitDetails.getNom() != null) produit.setNom(produitDetails.getNom());
+                        // Validations
+                        if (produitDetails.getNom() != null) {
+                            if (produitDetails.getNom().trim().isEmpty()) {
+                                throw new RuntimeException("Le nom du produit ne peut pas être vide");
+                            }
+                            produit.setNom(produitDetails.getNom());
+                        }
+                        if (produitDetails.getPrix() != null) {
+                            if (produitDetails.getPrix() <= 0) {
+                                throw new RuntimeException("Le prix doit être supérieur à 0");
+                            }
+                            produit.setPrix(produitDetails.getPrix());
+                        }
+                        if (produitDetails.getQuantite() != null) {
+                            if (produitDetails.getQuantite() < 0) {
+                                throw new RuntimeException("La quantité ne peut pas être négative");
+                            }
+                            produit.setQuantite(produitDetails.getQuantite());
+                        }
+                        
+                        // Autres champs
                         if (produitDetails.getDescription() != null) produit.setDescription(produitDetails.getDescription());
-                        if (produitDetails.getPrix() != null) produit.setPrix(produitDetails.getPrix());
                         if (produitDetails.getImage() != null) produit.setImage(produitDetails.getImage());
-                        if (produitDetails.getQuantite() != null) produit.setQuantite(produitDetails.getQuantite());
                         if (produitDetails.getRank() != null) produit.setRank(produitDetails.getRank());
                         if (produitDetails.getRating() != null) produit.setRating(produitDetails.getRating());
                         if (produitDetails.getReviews_count() != null) produit.setReviews_count(produitDetails.getReviews_count());
@@ -119,7 +148,7 @@ public class ProduitController {
                         // Gestion de la catégorie
                         if (produitDetails.getCategorie() != null && produitDetails.getCategorie().getId() != null) {
                             Categorie categorie = categorieRepository.findById(produitDetails.getCategorie().getId())
-                                    .orElse(null);
+                                    .orElseThrow(() -> new RuntimeException("Catégorie non trouvée avec l'ID: " + produitDetails.getCategorie().getId()));
                             produit.setCategorie(categorie);
                         }
 
@@ -142,9 +171,14 @@ public class ProduitController {
             System.out.println("🗑️ Suppression du produit ID: " + id);
             return produitRepository.findById(id)
                     .map(produit -> {
-                        produitRepository.delete(produit);
-                        System.out.println("✅ Produit supprimé: " + produit.getNom());
-                        return ResponseEntity.noContent().build();
+                        try {
+                            produitRepository.delete(produit);
+                            System.out.println("✅ Produit supprimé: " + produit.getNom());
+                            return ResponseEntity.ok().body("Produit supprimé avec succès");
+                        } catch (Exception e) {
+                            System.err.println("❌ Erreur lors de la suppression (contrainte FK): " + e.getMessage());
+                            return ResponseEntity.badRequest().body("Impossible de supprimer ce produit car il est référencé dans des ventes ou investissements");
+                        }
                     })
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
