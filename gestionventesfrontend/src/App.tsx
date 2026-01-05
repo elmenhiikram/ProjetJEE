@@ -61,6 +61,7 @@ const DashboardRedirect = () => {
 
 const App = () => {
   console.log('🚀 App component is rendering...');
+<<<<<<< HEAD
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -75,6 +76,11 @@ const App = () => {
         v7_relativeSplatPath: true
       }}
     >
+=======
+  
+  return (
+    <Router>
+>>>>>>> 8d1c0e206745bd8490f5602ea185a176817a96f0
       <AuthProvider>
         <Routes>
           {/* ================= PUBLIC ================= */}
@@ -207,4 +213,8 @@ const App = () => {
   );
 };
 
+<<<<<<< HEAD
 export default App;
+=======
+export default App;
+>>>>>>> 8d1c0e206745bd8490f5602ea185a176817a96f0
