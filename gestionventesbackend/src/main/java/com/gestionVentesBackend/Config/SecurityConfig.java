@@ -41,6 +41,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/produits/**").hasAnyRole("ADMIN", "VENDEUR")
                 .requestMatchers(HttpMethod.PUT, "/produits/**").hasAnyRole("ADMIN", "VENDEUR")
                 .requestMatchers(HttpMethod.DELETE, "/produits/**").hasAnyRole("ADMIN", "VENDEUR")
+                // Rating de produit: accessible aux clients
+                .requestMatchers(HttpMethod.PATCH, "/produits/*/rating").hasAnyRole("ADMIN", "VENDEUR", "CLIENT")
 
                 // Création de vente: ADMIN, VENDEUR et CLIENT
                 .requestMatchers(HttpMethod.POST, "/ventes/**").hasAnyRole("ADMIN", "VENDEUR", "CLIENT")

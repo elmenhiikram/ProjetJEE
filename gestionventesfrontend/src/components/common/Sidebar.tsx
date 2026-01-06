@@ -69,10 +69,10 @@ const Sidebar = ({ isOpen, onClose, activeSection, setActiveSection, cartCount =
       // Si on est sur le dashboard client, afficher les sections internes
       if (isClientDashboard && setActiveSection) {
         return [
-          { id: 'overview', label: 'Overview', icon: Home },
+          { id: 'overview', label: 'Vue d\'ensemble', icon: Home },
           { id: 'ventes', label: 'Mes Achats', icon: Package },
-          { id: 'products', label: 'Shop', icon: ShoppingBag },
-          { id: 'wishlist', label: 'Wishlist', icon: Heart },
+          { id: 'products', label: 'Boutique', icon: ShoppingBag },
+          { id: 'wishlist', label: 'Liste de Souhaits', icon: Heart },
           { id: 'cart', label: 'Panier', icon: ShoppingCart, badge: cartCount },
         ];
       }

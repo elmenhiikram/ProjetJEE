@@ -4,6 +4,7 @@ import com.gestionVentesBackend.Model.Produit;
 import com.gestionVentesBackend.Model.Categorie;
 import com.gestionVentesBackend.Repository.ProduitRepository;
 import com.gestionVentesBackend.Repository.CategorieRepository;
+import com.gestionVentesBackend.dto.RatingUpdateDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,7 +14,7 @@ import java.util.List;
 @RequestMapping("/produits")
 @CrossOrigin(
         origins = {"http://localhost:5173", "http://localhost:3000", "http://localhost:4200"},
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.PATCH, RequestMethod.OPTIONS},
         allowedHeaders = "*",
         allowCredentials = "true",
         maxAge = 3600
@@ -183,6 +184,44 @@ public class ProduitController {
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
             System.err.println("❌ Erreur lors de la suppression: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());
+        }
+    }
+
+    // PATCH /produits/{id}/rating - Mettre à jour le rating d'un produit
+    @PatchMapping("/{id}/rating")
+    public ResponseEntity<?> updateRating(@PathVariable Integer id, @RequestBody RatingUpdateDTO request) {
+        try {
+            System.out.println("⭐ Mise à jour du rating pour le produit ID: " + id);
+            
+            return produitRepository.findById(id)
+                    .map(produit -> {
+                        Double currentRating = produit.getRating();
+                        Double newRating = request.getRating();
+                        
+                        // Valider que le rating est entre 1 et 5
+                        if (newRating < 1 || newRating > 5) {
+                            return ResponseEntity.badRequest().body("Le rating doit être entre 1 et 5");
+                        }
+                        
+                        // Si le produit a déjà un rating, faire la moyenne
+                        if (currentRating != null && currentRating > 0) {
+                            newRating = (currentRating + newRating) / 2.0;
+                            System.out.println("��� Ancien rating: " + currentRating + ", Nouveau: " + request.getRating() + ", Moyenne: " + newRating);
+                        } else {
+                            System.out.println("��� Premier rating: " + newRating);
+                        }
+                        
+                        produit.setRating(newRating);
+                        Produit updatedProduit = produitRepository.save(produit);
+                        System.out.println("✅ Rating mis à jour pour: " + updatedProduit.getNom());
+                        
+                        return ResponseEntity.ok(updatedProduit);
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            System.err.println("❌ Erreur lors de la mise à jour du rating: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());
         }

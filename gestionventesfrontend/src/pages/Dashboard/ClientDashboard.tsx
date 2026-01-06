@@ -22,6 +22,7 @@ import { clientApi, type Client } from "../../api/clientApi";
 import { saleApi, type SaleRequest } from "../../api/saleApi";
 import { fetchCustomerPurchases, type CustomerPurchase } from "../../services/clientService";
 import { useClientDashboard } from "../../layouts/DashboardLayout";
+import RatingModal from "../../components/common/RatingModal";
 
 interface CartItem extends Product {
   quantity: number;
@@ -54,6 +55,8 @@ const ClientDashboard = () => {
   const [sales, setSales] = useState<CustomerPurchase[]>([]);
   const [totalSpent, setTotalSpent] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [purchasedProducts, setPurchasedProducts] = useState<Array<{id: number; nom: string; image?: string}>>([]);
 
   const [profileData, setProfileData] = useState<ProfileData>({
     nom: user?.name || "Client",
@@ -89,8 +92,9 @@ const ClientDashboard = () => {
     try {
       setLoadingProducts(true);
       const response = await productApi.getAll();
-      setProducts(response.data || []);
-      setFilteredProducts(response.data || []);
+      const sortedProducts = (response.data || []).sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      setProducts(sortedProducts);
+      setFilteredProducts(sortedProducts);
     } catch (error) {
       console.error("Erreur chargement produits:", error);
       setErrorMessage("Impossible de charger les produits");
@@ -207,13 +211,29 @@ const ClientDashboard = () => {
       await Promise.all(ventePromises);
 
       setSuccessMessage("Commande confirmée avec succès !");
+      
+      // Préparer les produits achetés pour le modal de rating
+      const purchasedItems = cart
+        .filter(item => item.id !== undefined)
+        .map(item => ({
+          id: item.id!,
+          nom: item.nom,
+          image: item.image
+        }));
+      setPurchasedProducts(purchasedItems);
+      
+      // Vider le panier
       setCart([]);
       localStorage.removeItem("user_cart");
       
       // Recharger les données pour avoir les stocks à jour
       await Promise.all([fetchClientData(), fetchProducts()]);
       
-      setTimeout(() => setActiveSection("ventes"), 2000);
+      // Afficher le modal de rating après un court délai
+      setTimeout(() => {
+        setShowRatingModal(true);
+        setSuccessMessage("");
+      }, 1500);
     } catch (error: any) {
       console.error("Checkout error:", error);
       const errorMsg = error?.response?.data?.message || error?.message || "Erreur lors de la confirmation de la commande";
@@ -278,6 +298,9 @@ const ClientDashboard = () => {
           p.description?.toLowerCase().includes(search.toLowerCase())
       );
     }
+
+    // Trier par rating décroissant
+    filtered = filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
     setFilteredProducts(filtered);
   };
@@ -358,8 +381,31 @@ const ClientDashboard = () => {
   const cartTotal = cart.reduce((sum, item) => sum + (item.prix || 0) * item.quantity, 0);
   const productsInCart = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Gestion du modal de rating
+  const handleRatingSuccess = () => {
+    setSuccessMessage("Merci pour votre notation !");
+    setTimeout(() => {
+      setSuccessMessage("");
+      setActiveSection("ventes");
+    }, 2000);
+  };
+
+  const handleRatingClose = () => {
+    setShowRatingModal(false);
+    setPurchasedProducts([]);
+    setActiveSection("ventes");
+  };
+
   return (
     <div className="space-y-6">
+      {/* Rating Modal */}
+      <RatingModal
+        isOpen={showRatingModal}
+        products={purchasedProducts}
+        onClose={handleRatingClose}
+        onSuccess={handleRatingSuccess}
+      />
+
       {/* Messages de succès/erreur */}
       {successMessage && (
         <div className="bg-emerald-500/20 border border-emerald-500/50 rounded-xl p-4 flex items-center gap-3">
@@ -375,7 +421,7 @@ const ClientDashboard = () => {
         </div>
       )}
 
-      {/* OVERVIEW */}
+      {/* VUE D'ENSEMBLE */}
       {activeSection === "overview" && (
         <div className="space-y-6">
           <div>
@@ -428,47 +474,37 @@ const ClientDashboard = () => {
               );
             })}
           </div>
-          <div className="grid lg:grid-cols-2 gap-6">
-            <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-              <h3 className="text-xl font-bold mb-6 text-white">Derniers Achats</h3>
-              <div className="space-y-3">
-                {sales.slice(0, 3).map((sale) => (
-                  <div
-                    key={`${sale.client?.id ?? 'c'}-${sale.produit?.id ?? 'p'}-${sale.dateVente ?? 'd'}-${sale.heureVente ?? 't'}`}
-                    className="flex items-center justify-between p-4 bg-slate-700/40 rounded-xl"
-                  >
-                    <div>
-                      <p className="font-semibold text-white">{sale.produit?.nom || "Produit"}</p>
-                      <p className="text-xs text-slate-400">
-                        {sale.dateVente ? new Date(sale.dateVente).toLocaleDateString("fr-FR") : ""} à{" "}
-                        {sale.heureVente}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-white">${(sale.quantite * (sale.produit?.prix ?? 0)).toFixed(2)}</p>
-                      <p className="text-xs text-slate-400">{sale.quantite} unité(s)</p>
-                    </div>
+          <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+            <h3 className="text-xl font-bold mb-6 text-white">Derniers Achats</h3>
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+              {sales
+                .sort((a, b) => {
+                  const dateA = new Date(`${a.dateVente} ${a.heureVente}`);
+                  const dateB = new Date(`${b.dateVente} ${b.heureVente}`);
+                  return dateB.getTime() - dateA.getTime();
+                })
+                .slice(0, 10)
+                .map((sale) => (
+                <div
+                  key={`${sale.client?.id ?? 'c'}-${sale.produit?.id ?? 'p'}-${sale.dateVente ?? 'd'}-${sale.heureVente ?? 't'}`}
+                  className="flex items-center justify-between p-4 bg-slate-700/40 rounded-xl hover:bg-slate-700/60 transition-all"
+                >
+                  <div>
+                    <p className="font-semibold text-white">{sale.produit?.nom || "Produit"}</p>
+                    <p className="text-xs text-slate-400">
+                      {sale.dateVente ? new Date(sale.dateVente).toLocaleDateString("fr-FR") : ""} à{" "}
+                      {sale.heureVente}
+                    </p>
                   </div>
-                ))}
-                {sales.length === 0 && (
-                  <p className="text-slate-400 text-sm text-center py-4">Aucun achat pour le moment</p>
-                )}
-              </div>
-            </div>
-            <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-              <h3 className="text-xl font-bold mb-6 text-white">Statut Compte</h3>
-              <div className="space-y-3">
-                {[
-                  { label: "Statut", value: "Actif", color: "text-emerald-400" },
-                  { label: "Type Client", value: "Standard", color: "text-white" },
-                  { label: "Points Fidélité", value: `${totalOrders * 100} pts`, color: "text-blue-400" },
-                ].map((item, i) => (
-                  <div key={i} className="flex justify-between p-3 bg-slate-700/40 rounded-lg">
-                    <span className="text-slate-400">{item.label}</span>
-                    <span className={`font-semibold ${item.color}`}>{item.value}</span>
+                  <div className="text-right">
+                    <p className="font-bold text-white">${(sale.quantite * (sale.produit?.prix ?? 0)).toFixed(2)}</p>
+                    <p className="text-xs text-slate-400">{sale.quantite} unité(s)</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+              {sales.length === 0 && (
+                <p className="text-slate-400 text-sm text-center py-4">Aucun achat pour le moment</p>
+              )}
             </div>
           </div>
         </div>
@@ -529,7 +565,7 @@ const ClientDashboard = () => {
         </div>
       )}
 
-      {/* SHOP PRODUCTS */}
+      {/* BOUTIQUE */}
       {activeSection === "products" && (
         <div className="space-y-6">
           <h2 className="text-3xl font-black mb-2 text-white">Boutique</h2>
@@ -568,80 +604,87 @@ const ClientDashboard = () => {
               <p className="text-slate-400 text-lg font-medium">Aucun produit trouvé</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="group bg-slate-800/60 backdrop-blur-xl rounded-2xl overflow-hidden border border-slate-700/50 hover:border-blue-500/50 transition-all"
+                  className="group relative"
                 >
-                  <div className="relative h-48 bg-slate-700 overflow-hidden">
-                    <img
-                      src={
-                        product.image ||
-                        `https://placehold.co/300x300/1e293b/ffffff?text=${encodeURIComponent(product.nom)}`
-                      }
-                      alt={product.nom}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      onError={(e) => handleImageError(e, product.nom)}
-                    />
-                    <button
-                      onClick={() => product.id && toggleWishlist(product.id)}
-                      className="absolute top-3 right-3 p-2 bg-slate-900/80 rounded-xl hover:bg-red-500/20 transition-all"
-                    >
-                      <Heart
-                        className={`w-5 h-5 ${
-                          product.id && wishlist.includes(product.id)
-                            ? "fill-red-500 text-red-500"
-                            : "text-white"
-                        }`}
+                  <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-2xl overflow-hidden border border-slate-700/50 group-hover:border-blue-500/50 transition-all duration-300 shadow-lg">
+                    <div className="relative h-44 md:h-52 bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
+                      <img
+                        src={
+                          product.image ||
+                          `https://placehold.co/300x200/1e293b/ffffff?text=${encodeURIComponent(product.nom.substring(0, 10))}`
+                        }
+                        alt={product.nom}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        onError={(e) => handleImageError(e, product.nom)}
                       />
-                    </button>
-                  </div>
-                  <div className="p-5 space-y-3">
-                    <h3 className="font-bold text-white line-clamp-2">{product.nom}</h3>
-                    <p className="text-sm text-slate-400 line-clamp-1">{product.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">
-                        Catégorie: {product.categorie?.nom || "Non catégorisé"}
-                      </span>
+                      <button
+                        onClick={() => product.id && toggleWishlist(product.id)}
+                        className="absolute top-3 right-3 p-2 bg-slate-900/80 backdrop-blur-sm rounded-xl hover:bg-red-500/20 transition-all"
+                      >
+                        <Heart
+                          className={`w-4 h-4 ${
+                            product.id && wishlist.includes(product.id)
+                              ? "fill-red-500 text-red-500"
+                              : "text-white"
+                          }`}
+                        />
+                      </button>
+                      {(product.quantite || 0) > 0 && (
+                        <div className="absolute top-3 left-3 px-2 py-1 bg-emerald-500/20 backdrop-blur-sm rounded-lg">
+                          <span className="text-xs font-bold text-emerald-300">{product.quantite} en stock</span>
+                        </div>
+                      )}
+                      {(product.quantite || 0) === 0 && (
+                        <div className="absolute top-3 left-3 px-2 py-1 bg-red-500/20 backdrop-blur-sm rounded-lg">
+                          <span className="text-xs font-bold text-red-300">Rupture</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4 space-y-2">
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`w-3.5 h-3.5 ${
-                              i < 4 ? "fill-yellow-400 text-yellow-400" : "text-slate-600"
+                            className={`w-3 h-3 ${
+                              i < Math.round(product.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-slate-600"
                             }`}
                           />
                         ))}
+                        <span className="text-xs text-slate-400 ml-1">
+                          ({(product.rating || 0).toFixed(1)})
+                        </span>
                       </div>
-                    </div>
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="text-2xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                        ${product.prix?.toFixed(2)}
-                      </span>
-                      <span
-                        className={`text-xs font-bold px-2 py-1 rounded-full ${
-                          (product.quantite || 0) > 0
-                            ? "bg-emerald-500/20 text-emerald-300"
-                            : "bg-red-500/20 text-red-300"
+
+                      <h3 className="text-sm font-semibold text-white line-clamp-1">{product.nom}</h3>
+
+                      <p className="text-xs text-slate-500 line-clamp-1">{product.description}</p>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-lg font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                          {product.prix} DHS
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {product.categorie?.nom || "N/A"}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => addToCart(product)}
+                        disabled={(product.quantite || 0) === 0}
+                        className={`w-full py-2 rounded-xl font-semibold text-xs transition-all ${
+                          (product.quantite || 0) === 0
+                            ? "bg-slate-700 text-slate-500 cursor-not-allowed"
+                            : "bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-lg hover:shadow-blue-500/50"
                         }`}
                       >
-                        {(product.quantite || 0) > 0
-                          ? `${product.quantite} en stock`
-                          : "Rupture de stock"}
-                      </span>
+                        {(product.quantite || 0) === 0 ? "Rupture de stock" : "Ajouter au panier"}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => addToCart(product)}
-                      disabled={(product.quantite || 0) === 0}
-                      className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${
-                        (product.quantite || 0) === 0
-                          ? "bg-slate-700 text-slate-500 cursor-not-allowed"
-                          : "bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-lg hover:shadow-blue-500/50"
-                      }`}
-                    >
-                      {(product.quantite || 0) === 0 ? "Rupture de stock" : "Ajouter au panier"}
-                    </button>
                   </div>
                 </div>
               ))}
@@ -650,10 +693,10 @@ const ClientDashboard = () => {
         </div>
       )}
 
-      {/* WISHLIST */}
+      {/* LISTE DE SOUHAITS */}
       {activeSection === "wishlist" && (
         <div className="space-y-6">
-          <h2 className="text-3xl font-black mb-2 text-white">Ma Wishlist</h2>
+          <h2 className="text-3xl font-black mb-2 text-white">Ma Liste de Souhaits</h2>
           {wishlist.length === 0 ? (
             <div className="text-center py-16 bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50">
               <Heart className="w-16 h-16 text-slate-700 mx-auto mb-4" />
@@ -690,6 +733,19 @@ const ClientDashboard = () => {
                     <div className="p-5 space-y-3">
                       <h3 className="font-bold text-white line-clamp-2">{product.nom}</h3>
                       <p className="text-sm text-slate-400 line-clamp-1">{product.description}</p>
+                      <div className="flex items-center gap-1 mb-2">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3.5 h-3.5 ${
+                              i < Math.round(product.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-slate-600"
+                            }`}
+                          />
+                        ))}
+                        <span className="text-xs text-slate-400 ml-1">
+                          ({(product.rating || 0).toFixed(1)})
+                        </span>
+                      </div>
                       <div className="flex justify-between items-center pt-2">
                         <span className="text-2xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                           ${product.prix?.toFixed(2)}

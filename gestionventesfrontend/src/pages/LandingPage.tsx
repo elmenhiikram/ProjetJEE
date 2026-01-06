@@ -62,7 +62,6 @@ export default function LandingPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [countdown, setCountdown] = useState({ days: 15, hours: 10, mins: 56, secs: 54 })
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [topProduct, setTopProduct] = useState<Product | null>(null)
@@ -172,36 +171,6 @@ export default function LandingPage() {
     
     setProducts(filtered)
   }, [searchQuery, selectedCategory, allProducts])
-
-  // Countdown timer effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        let { days, hours, mins, secs } = prev
-        secs--
-        if (secs < 0) {
-          secs = 59
-          mins--
-        }
-        if (mins < 0) {
-          mins = 59
-          hours--
-        }
-        if (hours < 0) {
-          hours = 23
-          days--
-        }
-        if (days < 0) {
-          days = 0
-          hours = 0
-          mins = 0
-          secs = 0
-        }
-        return { days, hours, mins, secs }
-      })
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
 
   const getBadge = (index: number) => {
     const badges = ["30% Off", "20% Off", "15% Off", "25% Off"]
@@ -355,21 +324,6 @@ export default function LandingPage() {
                   className="w-full h-full object-cover"
                 />
               </div>
-
-              <div className="absolute -bottom-4 right-0 flex gap-2">
-                {products.slice(1, 3).map((product) => (
-                  <div
-                    key={product.id}
-                    className="w-16 h-16 rounded-xl bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 overflow-hidden"
-                  >
-                    <img
-                      src={product.image || `/placeholder.svg?height=64&width=64`}
-                      alt={product.nom}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
@@ -474,61 +428,6 @@ export default function LandingPage() {
                 </div>
               ))
             )}
-          </div>
-        </div>
-      </section>
-
-      {/* Promotional Banner with Countdown */}
-      <section className="py-12 lg:py-16 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-8 lg:p-12">
-              <div className="space-y-6">
-                <div className="inline-flex items-center gap-2 text-red-400 text-sm">
-                  <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
-                  Ne ratez pas!
-                </div>
-
-                <h2 className="text-3xl md:text-4xl font-black text-white">
-                  Améliorez Votre
-                  <br />
-                  <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                    Expérience Musicale
-                  </span>
-                </h2>
-
-                <div className="flex gap-3">
-                  {[
-                    { value: countdown.days, label: "Jour" },
-                    { value: countdown.hours, label: "Hrs" },
-                    { value: countdown.mins, label: "Min" },
-                    { value: countdown.secs, label: "Sec" },
-                  ].map((item, index) => (
-                    <div key={index} className="text-center">
-                      <div className="w-14 h-14 rounded-xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center">
-                        <span className="text-xl font-black text-white">{item.value.toString().padStart(2, "0")}</span>
-                      </div>
-                      <span className="text-xs text-slate-400 mt-1">{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => navigate('/signup')}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-xl text-white font-semibold shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5"
-                >
-                  Découvrez-le!
-                </button>
-              </div>
-
-              <div className="relative h-64 lg:h-80">
-                <img
-                  src={topProduct?.image || "/placeholder.svg?height=320&width=400"}
-                  alt="Produit vedette"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            </div>
           </div>
         </div>
       </section>

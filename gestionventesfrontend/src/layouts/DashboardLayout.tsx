@@ -25,12 +25,12 @@ const DashboardLayout = () => {
   // Mapper les routes aux titres
   useEffect(() => {
     const pathToTitle: { [key: string]: string } = {
-      '/dashboard': 'Dashboard',
-      '/dashboard/admin': 'Dashboard Admin',
-      '/dashboard/vendeur': 'Dashboard Vendeur',
-      '/dashboard/analyste': 'Dashboard Analyste',
-      '/dashboard/client': 'Dashboard Client',
-      '/dashboard/investisseur': 'Dashboard Investisseur',
+      '/dashboard': 'Tableau de Bord',
+      '/dashboard/admin': 'Tableau de Bord Admin',
+      '/dashboard/vendeur': 'Tableau de Bord Vendeur',
+      '/dashboard/analyste': 'Tableau de Bord Analyste',
+      '/dashboard/client': 'Tableau de Bord Client',
+      '/dashboard/investisseur': 'Tableau de Bord Investisseur',
       '/products': 'Gestion des Produits',
       '/sales': 'Gestion des Ventes',
       '/shop': 'Boutique',
@@ -46,9 +46,22 @@ const DashboardLayout = () => {
     };
 
     const path = location.pathname;
-    const title = pathToTitle[path] || 'Dashboard';
+    let title = pathToTitle[path] || 'Tableau de Bord';
+    
+    // Si on est sur le dashboard client, utiliser la section active
+    if (path === '/dashboard/client' && clientDashboardState?.activeSection) {
+      const sectionTitles: { [key: string]: string } = {
+        'overview': 'Vue d\'ensemble',
+        'ventes': 'Mes Achats',
+        'products': 'Boutique',
+        'wishlist': 'Liste de Souhaits',
+        'cart': 'Panier',
+      };
+      title = sectionTitles[clientDashboardState.activeSection] || 'Tableau de Bord Client';
+    }
+    
     setPageTitle(title);
-  }, [location.pathname]);
+  }, [location.pathname, clientDashboardState?.activeSection]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white flex">
@@ -62,9 +75,9 @@ const DashboardLayout = () => {
       />
 
       {/* Main Content */}
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <header className="flex items-center justify-between gap-4 p-4 border-b border-slate-700 bg-slate-800">
+        <header className="sticky top-0 z-50 flex items-center justify-between gap-4 p-4 border-b border-slate-700 bg-slate-800/95 backdrop-blur-sm">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -82,7 +95,7 @@ const DashboardLayout = () => {
         </header>
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="flex-1 p-6 overflow-y-auto">
           <Outlet context={{ setClientDashboardState } satisfies OutletContext} />
         </main>
       </div>
