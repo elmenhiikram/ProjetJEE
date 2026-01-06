@@ -659,7 +659,7 @@ public class DashboardService {
         globalStats.put("tendances", getTendances());
         globalStats.put("performances", getPerformances());
         globalStats.put("topClients", getTopClients(5));
-        globalStats.put("topProduits", getTopProduitsVendus(10));
+        globalStats.put("topProduits", getTopProduitsVendus(100));
 
         return globalStats;
     }
