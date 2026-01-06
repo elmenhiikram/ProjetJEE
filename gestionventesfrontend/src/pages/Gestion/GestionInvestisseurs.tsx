@@ -145,7 +145,6 @@ export default function GestionInvestisseurs() {
     <div className="p-6 max-w-full">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-white">Gestion des Investisseurs</h1>
         <button
           onClick={() => setIsModalOpen(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"

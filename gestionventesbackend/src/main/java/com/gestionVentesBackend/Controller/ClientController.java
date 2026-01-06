@@ -39,16 +39,20 @@ public class ClientController {
     }
 
     @PostMapping
-    public ResponseEntity<Client> createClient(@RequestBody Client client) {
-        return ResponseEntity.ok(clientService.createClient(client));
+    public ResponseEntity<?> createClient(@RequestBody Client client) {
+        try {
+            return ResponseEntity.ok(clientService.createClient(client));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Client> updateClient(@PathVariable Long id, @RequestBody Client client) {
+    public ResponseEntity<?> updateClient(@PathVariable Long id, @RequestBody Client client) {
         try {
             return ResponseEntity.ok(clientService.updateClient(id, client));
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 

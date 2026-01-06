@@ -32,16 +32,20 @@ public class CategorieController {
     }
 
     @PostMapping
-    public ResponseEntity<Categorie> createCategorie(@RequestBody Categorie categorie) {
-        return ResponseEntity.ok(categorieService.createCategorie(categorie));
+    public ResponseEntity<?> createCategorie(@RequestBody Categorie categorie) {
+        try {
+            return ResponseEntity.ok(categorieService.createCategorie(categorie));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Categorie> updateCategorie(@PathVariable Integer id, @RequestBody Categorie categorie) {
+    public ResponseEntity<?> updateCategorie(@PathVariable Integer id, @RequestBody Categorie categorie) {
         try {
             return ResponseEntity.ok(categorieService.updateCategorie(id, categorie));
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 

@@ -1,88 +1,66 @@
 import { useState, useEffect } from 'react';
+import { useLogin } from '../hooks/useLogin';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { authApi } from '../api/authApi';
+import { ArrowLeft } from 'lucide-react';
 
 const Login = () => {
-    const { login } = useAuth();
     const navigate = useNavigate();
+    const { handleLogin, isLoading, error, success, clearMessages } = useLogin();
     const [formData, setFormData] = useState({
         email: '',
         password: ''
     });
-    const [isLoading, setIsLoading] = useState(false);
-    const [message, setMessage] = useState({ text: '', type: '' });
 
     // Clears message after a delay
     useEffect(() => {
-        if (message.text) {
-            const timer = setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+        if (error || success) {
+            const timer = setTimeout(clearMessages, 5000);
             return () => clearTimeout(timer);
         }
-    }, [message]);
+    }, [error, success, clearMessages]);
 
     // Handle form input changes
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-        if (message.text) setMessage({ text: '', type: '' });
+        if (error || success) clearMessages();
     };
 
-    // Handle Login submission - REAL API CALL
-    const handleLogin = async (e: React.FormEvent) => {
+    // Handle form submission
+    const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
-        setMessage({ text: '', type: '' });
-
-        try {
-            const response = await authApi.login(formData);
-            console.log('✅ Login successful:', response.data);
-            
-            const userData = response.data;
-            const user = {
-                id: userData.id,
-                name: userData.name,
-                email: userData.email,
-                role: userData.role as 'admin' | 'vendeur' | 'analyste' | 'client' | 'investisseur',
-                token: userData.token,
-            };
-            
-            setMessage({ text: `Bienvenue, ${user.name}!`, type: 'success' });
-            
-            setTimeout(() => {
-                login(user);
-                // Redirection vers le dashboard selon le rôle
-                navigate('/dashboard');
-            }, 1000);
-        } catch (err: any) {
-            const errorMsg = err.response?.data?.error || err.message || "Email ou mot de passe incorrect.";
-            setMessage({ 
-                text: errorMsg, 
-                type: 'error' 
-            });
-            console.error('❌ Error:', err);
-        } finally {
-            setIsLoading(false);
-        }
+        await handleLogin(formData);
     };
+
+    const message = error || success;
+    const messageType = error ? 'error' : 'success';
 
     return (
         <div className="w-full max-w-md bg-slate-950/80 backdrop-blur-xl border border-slate-800/50 p-8 space-y-6 rounded-xl shadow-2xl shadow-black/20">
+            {/* Retour à l'accueil */}
+            <button
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2 text-slate-400 hover:text-blue-400 transition-colors mb-4"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm">Retour à l'accueil</span>
+            </button>
+
             {/* Message Box */}
-            {message.text && (
+            {message && (
                 <div
                     className={`p-4 rounded-lg text-sm transition-opacity duration-300 ${
-                        message.type === 'success'
+                        messageType === 'success'
                             ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                             : 'bg-red-500/20 text-red-400 border border-red-500/30'
                     }`}
                     role="alert"
                 >
-                    {message.text}
+                    {message}
                 </div>
             )}
 
             {/* Login Form */}
-            <form onSubmit={handleLogin} className="space-y-6">
+            <form onSubmit={onSubmit} className="space-y-6">
                 <h2 className="text-3xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent text-center">Connexion</h2>
                 
                 <div>

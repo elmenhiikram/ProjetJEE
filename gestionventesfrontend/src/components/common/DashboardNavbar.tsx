@@ -3,14 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronDown, LogOut, User as UserIcon } from 'lucide-react';
 
 import { useAuth } from '../../contexts/AuthContext';
+import { useLogout } from '../../hooks/useLogout';
 import { clientApi } from '../../api/clientApi';
 import { employeeApi } from '../../api/employeeApi';
 import { investorApi } from '../../api/investorApi';
 
 const DashboardNavbar = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { handleLogout } = useLogout();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [imgOk, setImgOk] = useState(true);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -67,11 +70,21 @@ const DashboardNavbar = () => {
     loadPhoto();
   }, [user?.id, user?.role]);
 
-  const handleLogout = () => {
+  const onLogout = () => {
+    console.log('🖱️ Bouton déconnexion cliqué');
     setShowDropdown(false);
-    if (window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-      logout();
-    }
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    console.log('✅ Confirmation de déconnexion');
+    setShowLogoutModal(false);
+    handleLogout(false);
+  };
+
+  const cancelLogout = () => {
+    console.log('❌ Déconnexion annulée');
+    setShowLogoutModal(false);
   };
 
   const goProfile = () => {
@@ -115,12 +128,38 @@ const DashboardNavbar = () => {
           <hr className="my-2 border-slate-700" />
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={onLogout}
             className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             Déconnexion
           </button>
+        </div>
+      )}
+
+      {/* Modal de confirmation de déconnexion */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100]">
+          <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl border border-slate-700">
+            <h3 className="text-xl font-semibold text-white mb-4">Confirmer la déconnexion</h3>
+            <p className="text-slate-300 mb-6">
+              Êtes-vous sûr de vouloir vous déconnecter ?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelLogout}
+                className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmLogout}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Déconnexion
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

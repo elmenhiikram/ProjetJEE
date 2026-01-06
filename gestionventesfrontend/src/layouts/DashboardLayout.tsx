@@ -1,11 +1,41 @@
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from '@/components/common/Sidebar';
 import DashboardNavbar from '@/components/common/DashboardNavbar';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pageTitle, setPageTitle] = useState('Dashboard');
+  const location = useLocation();
+
+  // Mapper les routes aux titres
+  useEffect(() => {
+    const pathToTitle: { [key: string]: string } = {
+      '/dashboard': 'Dashboard',
+      '/dashboard/admin': 'Dashboard Admin',
+      '/dashboard/vendeur': 'Dashboard Vendeur',
+      '/dashboard/analyste': 'Dashboard Analyste',
+      '/dashboard/client': 'Dashboard Client',
+      '/dashboard/investisseur': 'Dashboard Investisseur',
+      '/products': 'Gestion des Produits',
+      '/sales': 'Gestion des Ventes',
+      '/shop': 'Boutique',
+      '/gestion/clients': 'Gestion des Clients',
+      '/gestion/categories': 'Gestion des Catégories',
+      '/gestion/ventes': 'Gestion des Ventes',
+      '/gestion/products': 'Gestion des Produits',
+      '/gestion/produits': 'Gestion des Produits',
+      '/gestion/roles': 'Gestion des Rôles',
+      '/gestion/investissements': 'Gestion des Investissements',
+      '/gestion/employes': 'Gestion des Employés',
+      '/profile': 'Mon Profil',
+    };
+
+    const path = location.pathname;
+    const title = pathToTitle[path] || 'Dashboard';
+    setPageTitle(title);
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white flex">
@@ -28,7 +58,7 @@ const DashboardLayout = () => {
               <Menu />
             </button>
             <div>
-              <h1 className="text-2xl font-bold">Dashboard</h1>
+              <h1 className="text-2xl font-bold">{pageTitle}</h1>
             </div>
           </div>
 
