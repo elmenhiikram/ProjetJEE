@@ -25,6 +25,7 @@ import {
   ComposedChart,
   ReferenceLine,
 } from 'recharts';
+import { Activity } from 'lucide-react';
 import StatCard from '../../components/charts/StatCard';
 import axiosInstance from '../../api/axiosConfig';
 
@@ -152,7 +153,7 @@ const AnalysteDashboard = () => {
     setLoading(true);
     setErrorMessage('');
     try {
-      const res = await axiosInstance.get('/dashboard/stats-globales');
+      const res = await axiosInstance.get('/api/dashboard/stats-globales');
       const globalData = res.data;
 
       setDashboardStats(globalData.statsBasiques);
@@ -460,35 +461,82 @@ const AnalysteDashboard = () => {
                 />
               </div>
 
-              {/* Évolution CA & Ventes */}
-              <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-6">
-                <h3 className="text-xl font-bold mb-6 text-white">📈 Évolution CA & Ventes</h3>
-                <ResponsiveContainer width="100%" height={320}>
-                  <ComposedChart data={monthlyStats}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="mois" stroke="#94a3b8" fontSize={12} />
-                    <YAxis yAxisId="left" stroke="#94a3b8" fontSize={12} />
-                    <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#1e293b',
-                        border: '1px solid #475569',
-                        borderRadius: '8px',
-                      }}
-                    />
-                    <Legend />
-                    <Bar yAxisId="left" dataKey="ca" name="CA" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="ventes"
-                      name="Ventes"
-                      stroke="#10b981"
-                      strokeWidth={3}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
+<div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+  <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+    <Activity className="w-5 h-5 text-emerald-400" />
+    Évolution CA & Ventes
+  </h3>
+  <ResponsiveContainer width="100%" height={320}>
+    <ComposedChart data={monthlyStats}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+      <XAxis 
+        dataKey="mois" 
+        stroke="#94a3b8" 
+        fontSize={12} 
+      />
+      <YAxis 
+        yAxisId="left" 
+        stroke="#94a3b8" 
+        fontSize={12}
+        label={{ 
+          value: 'CA ($)', 
+          angle: -90,
+          position: 'insideLeft',
+          style: { fill: '#94a3b8', fontSize: 11 }
+        }}
+      />
+      <YAxis 
+        yAxisId="right" 
+        orientation="right" 
+        stroke="#94a3b8" 
+        fontSize={12}
+        label={{ 
+          value: 'Ventes (nombre)', 
+          angle: -90,
+          position: 'insideRight',
+          style: { fill: '#94a3b8', fontSize: 11 }
+        }}
+      />
+      <Tooltip
+        contentStyle={{
+          backgroundColor: "#1e293b",
+          border: "1px solid #475569",
+          borderRadius: "12px",
+        }}
+        labelStyle={{ color: "#f1f5f9" }}
+        formatter={(value, name) => {
+          if (name === "CA") return [`$${(value ?? 0).toLocaleString()}`, "Chiffre d'Affaires"];
+          if (name === "Ventes") return [value ?? 0, "Nombre de ventes"];
+          return [value ?? 0, name];
+        }}
+      />
+      <Legend />
+      {/* ← CORRECTION ICI */}
+      <Bar 
+        yAxisId="left" 
+        dataKey="chiffreAffaires"
+        name="CA" 
+        fill="#3b82f6" 
+        radius={[4, 4, 0, 0]} 
+      />
+      <Line
+        yAxisId="right"
+        type="monotone"
+        dataKey="ventes"
+        name="Ventes"
+        stroke="#10b981"
+        strokeWidth={3}
+        dot={{ fill: "#10b981", r: 5 }}
+        activeDot={{ r: 8, stroke: "#10b981", strokeWidth: 2 }}
+      />
+    </ComposedChart>
+  </ResponsiveContainer>
+  
+  {/* Légende sous le graphique */}
+  <div className="mt-4 text-xs text-slate-400">
+    <p>Données mensuelles montrant la corrélation entre le chiffre d'affaires et le nombre de ventes.</p>
+  </div>
+</div>
 
               {/* Radar & Pie Charts */}
               <div className="grid lg:grid-cols-2 gap-6 mb-6">

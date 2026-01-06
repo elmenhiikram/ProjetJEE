@@ -379,7 +379,7 @@ const ClientDashboard = () => {
 
   // Gestion des erreurs d'image
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, productName: string) => {
-    e.currentTarget.src = `https://via.placeholder.com/300/1e293b/ffffff?text=${encodeURIComponent(
+    e.currentTarget.src = `https://placehold.co/300x300/1e293b/ffffff?text=${encodeURIComponent(
       productName || "Produit"
     )}`;
     e.currentTarget.onerror = null;
@@ -646,7 +646,7 @@ const ClientDashboard = () => {
                     <img
                       src={
                         product.image ||
-                        `https://via.placeholder.com/300/1e293b/ffffff?text=${encodeURIComponent(product.nom)}`
+                        `https://placehold.co/300x300/1e293b/ffffff?text=${encodeURIComponent(product.nom)}`
                       }
                       alt={product.nom}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
@@ -740,7 +740,7 @@ const ClientDashboard = () => {
                       <img
                         src={
                           product.image ||
-                          `https://via.placeholder.com/300/1e293b/ffffff?text=${encodeURIComponent(
+                          `https://placehold.co/300x300/1e293b/ffffff?text=${encodeURIComponent(
                             product.nom
                           )}`
                         }
@@ -809,7 +809,7 @@ const ClientDashboard = () => {
                       <img
                         src={
                           item.image ||
-                          `https://via.placeholder.com/100/1e293b/ffffff?text=${encodeURIComponent(item.nom)}`
+                          `https://placehold.co/100x100/1e293b/ffffff?text=${encodeURIComponent(item.nom)}`
                         }
                         alt={item.nom}
                         className="w-24 h-24 object-cover rounded-xl"

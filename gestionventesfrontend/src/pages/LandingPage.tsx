@@ -380,7 +380,7 @@ export default function LandingPage() {
 
               <div className="relative h-80 lg:h-96 rounded-3xl overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
                 <img
-                  src={topProduct?.image || "/placeholder.svg?height=400&width=500"}
+                  src={topProduct?.image || "https://placehold.co/500x400/1e293b/ffffff?text=Produit"}
                   alt={topProduct?.nom || "Produit le plus vendu"}
                   className="w-full h-full object-cover"
                 />
@@ -393,7 +393,7 @@ export default function LandingPage() {
                     className="w-16 h-16 rounded-xl bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 overflow-hidden"
                   >
                     <img
-                      src={product.image || `/placeholder.svg?height=64&width=64`}
+                      src={product.image || `https://placehold.co/64x64/1e293b/ffffff?text=${encodeURIComponent(product.nom.substring(0, 5))}`}
                       alt={product.nom}
                       className="w-full h-full object-cover"
                     />
@@ -524,7 +524,7 @@ export default function LandingPage() {
 
               <div className="relative h-64 lg:h-80">
                 <img
-                  src={topProduct?.image || "/placeholder.svg?height=320&width=400"}
+                  src={topProduct?.image || "https://placehold.co/400x320/1e293b/ffffff?text=Produit+Vedette"}
                   alt="Produit vedette"
                   className="w-full h-full object-contain"
                 />
@@ -604,7 +604,7 @@ export default function LandingPage() {
                     <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-2xl overflow-hidden border border-slate-700/50 group-hover:border-blue-500/50 transition-all duration-300 shadow-lg">
                       <div className="relative h-44 md:h-52 bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
                         <img
-                          src={product.image || "/placeholder.svg"}
+                          src={product.image || `https://placehold.co/300x200/1e293b/ffffff?text=${encodeURIComponent(product.nom.substring(0, 10))}`}
                           alt={product.nom}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />

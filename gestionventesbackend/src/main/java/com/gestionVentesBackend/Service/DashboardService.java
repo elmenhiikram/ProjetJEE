@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class DashboardService {
@@ -500,34 +501,48 @@ public class DashboardService {
         String[] monthNames = {"Jan", "Fév", "Mar", "Avr", "Mai", "Jun",
                 "Jul", "Août", "Sep", "Oct", "Nov", "Dec"};
 
-        for (int i = nbMois - 1; i >= 0; i--) {
-            LocalDate month = now.minusMonths(i);
-            int monthIndex = month.getMonthValue() - 1;
+        // Récupérer les données réelles au lieu de générer des mois futurs
+        // On va d'abord récupérer tous les mois qui ont des données
+        Map<String, Map<String, Object>> realData = new HashMap<>();
 
-            double monthlyRevenue = venteRepository.findAll().stream()
-                    .filter(v -> v.getDateVente() != null &&
-                            v.getDateVente().getMonthValue() == month.getMonthValue() &&
-                            v.getDateVente().getYear() == month.getYear() &&
-                            v.getProduit() != null && v.getProduit().getPrix() != null)
-                    .mapToDouble(v -> v.getQuantite() * v.getProduit().getPrix())
-                    .sum();
+        venteRepository.findAll().forEach(vente -> {
+            if (vente.getDateVente() != null && vente.getProduit() != null) {
+                LocalDate date = vente.getDateVente();
+                String key = date.getYear() + "-" + String.format("%02d", date.getMonthValue());
 
-            long monthlySales = venteRepository.findAll().stream()
-                    .filter(v -> v.getDateVente() != null &&
-                            v.getDateVente().getMonthValue() == month.getMonthValue() &&
-                            v.getDateVente().getYear() == month.getYear())
-                    .count();
+                Map<String, Object> existing = realData.getOrDefault(key, new HashMap<>());
+                double currentCA = (double) existing.getOrDefault("chiffreAffaires", 0.0);
+                long currentSales = (long) existing.getOrDefault("ventes", 0L);
 
-            Map<String, Object> monthData = new HashMap<>();
-            monthData.put("mois", monthNames[monthIndex]);
-            monthData.put("chiffreAffaires", monthlyRevenue);
-            monthData.put("ventes", monthlySales);
-            monthData.put("annee", month.getYear());
+                existing.put("chiffreAffaires", currentCA + (vente.getQuantite() * vente.getProduit().getPrix()));
+                existing.put("ventes", currentSales + vente.getQuantite());
+                existing.put("annee", date.getYear());
+                existing.put("mois", monthNames[date.getMonthValue() - 1]);
 
-            evolution.add(monthData);
-        }
+                realData.put(key, existing);
+            }
+        });
 
-        return evolution;
+        // Convertir en liste, trier et limiter
+        List<Map<String, Object>> allData = new ArrayList<>(realData.values());
+
+        // Trier du plus récent au plus ancien
+        allData.sort((a, b) -> {
+            int yearCompare = ((Integer) b.get("annee")).compareTo((Integer) a.get("annee"));
+            if (yearCompare != 0) return yearCompare;
+
+            // Pour comparer les mois, on a besoin de l'index
+            String[] months = {"Jan", "Fév", "Mar", "Avr", "Mai", "Jun",
+                    "Jul", "Août", "Sep", "Oct", "Nov", "Dec"};
+            String moisA = (String) a.get("mois");
+            String moisB = (String) b.get("mois");
+            int indexA = Arrays.asList(months).indexOf(moisA);
+            int indexB = Arrays.asList(months).indexOf(moisB);
+
+            return Integer.compare(indexB, indexA);
+        });
+
+        return allData.stream().limit(nbMois).collect(Collectors.toList());
     }
 
     // 🔴 NOUVELLE MÉTHODE: Répartition par catégorie avec CA
