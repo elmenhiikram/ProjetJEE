@@ -33,7 +33,9 @@ export default function GestionVentes() {
         clientApi.getAll(),
         productApi.getAll()
       ]);
-      setVentes(venteRes.data);
+      // Trier les ventes par ID décroissant (du plus grand au plus petit)
+      const sortedVentes = (venteRes.data || []).sort((a: Sale, b: Sale) => (b.id || 0) - (a.id || 0));
+      setVentes(sortedVentes);
       setClients(clientRes.data);
       setProduits(produitRes.data);
     } catch (error) {
@@ -186,6 +188,12 @@ export default function GestionVentes() {
             <thead className="bg-slate-900">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  ID Client
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  ID Produit
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Client
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -214,13 +222,19 @@ export default function GestionVentes() {
             <tbody className="bg-slate-800 divide-y divide-slate-700">
               {filteredVentes.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-4 text-center text-gray-400">
+                  <td colSpan={10} className="px-6 py-4 text-center text-gray-400">
                     Aucune vente trouvée
                   </td>
                 </tr>
               ) : (
                 filteredVentes.map((vente, index) => (
                   <tr key={index} className="hover:bg-slate-700">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {vente.client?.id || '-'}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {vente.produit?.id || '-'}
+                    </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-white">
                       {vente.client?.nom} {vente.client?.prenom}
                     </td>

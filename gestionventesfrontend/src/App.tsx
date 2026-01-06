@@ -19,6 +19,7 @@ import VendeurDashboard from './pages/Dashboard/VendeurDashboard';
 import AnalysteDashboard from './pages/Dashboard/AnalysteDashboard';
 import ClientDashboard from './pages/Dashboard/ClientDashboard';
 import InvestisseurDashboard from './pages/Dashboard/InvestisseurDashboard';
+import CatalogueInvestisseur from './pages/Dashboard/CatalogueInvestisseur';
 
 // Gestion
 import GestionRoles from './pages/Gestion/GestionRoles';
@@ -47,7 +48,7 @@ const DashboardRedirect = () => {
     case 'admin':
       return <Navigate to="/dashboard/admin" replace />;
     case 'vendeur':
-      return <Navigate to="/dashboard/vendeur" replace />;
+      return <Navigate to="/gestion/ventes" replace />;
     case 'analyste':
       return <Navigate to="/dashboard/analyste" replace />;
     case 'client':
@@ -137,6 +138,54 @@ const App = () => {
               }
             />
             <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute allowedRoles={['analyste']}>
+                  <AnalysteDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics/produits"
+              element={
+                <ProtectedRoute allowedRoles={['analyste']}>
+                  <AnalysteDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics/ventes"
+              element={
+                <ProtectedRoute allowedRoles={['analyste']}>
+                  <AnalysteDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics/clients"
+              element={
+                <ProtectedRoute allowedRoles={['analyste']}>
+                  <AnalysteDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics/categories"
+              element={
+                <ProtectedRoute allowedRoles={['analyste']}>
+                  <AnalysteDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics/rapports"
+              element={
+                <ProtectedRoute allowedRoles={['analyste']}>
+                  <AnalysteDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/client"
               element={
                 <ProtectedRoute allowedRoles={['client']}>
@@ -150,6 +199,15 @@ const App = () => {
               element={
                 <ProtectedRoute allowedRoles={['investisseur']}>
                   <InvestisseurDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/catalogue/investisseur"
+              element={
+                <ProtectedRoute allowedRoles={['investisseur']}>
+                  <CatalogueInvestisseur />
                 </ProtectedRoute>
               }
             />

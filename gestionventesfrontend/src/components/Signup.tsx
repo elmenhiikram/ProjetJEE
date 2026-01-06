@@ -60,14 +60,28 @@ const Signup = () => {
         }
 
         // Préparer les données
-        const signupData = {
+        const signupData: any = {
             nom: formData.nom,
             prenom: formData.prenom,
             email: formData.email,
             password: formData.password,
             telephone: formData.telephone || undefined,
             adresse: formData.adresse || undefined,
+            userType: formData.userType,
+            photoUrl: formData.photoUrl || undefined,
         };
+
+        // Ajouter les données spécifiques investisseur si nécessaire
+        if (formData.userType === 'investisseur') {
+            signupData.ice = formData.ice || undefined;
+            signupData.nomEntreprise = formData.nomEntreprise || undefined;
+            signupData.adresseEntreprise = formData.adresseEntreprise || undefined;
+            signupData.numeroEntreprise = formData.numeroEntreprise || undefined;
+            signupData.emailEntreprise = formData.emailEntreprise || undefined;
+            signupData.logoUrl = formData.logoUrl || undefined;
+            signupData.domaineEntreprise = formData.domaineEntreprise || undefined;
+            signupData.capitalDisponible = formData.capitalDisponible ? parseFloat(formData.capitalDisponible) : undefined;
+        }
 
         await handleSignup(signupData);
 

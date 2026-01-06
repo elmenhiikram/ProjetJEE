@@ -438,7 +438,7 @@ const ClientDashboard = () => {
               },
               {
                 label: "Total Dépensé",
-                value: `$${totalSpent.toFixed(2)}`,
+                value: `${totalSpent.toFixed(2)} dhs`,
                 icon: TrendingUp,
                 color: "from-emerald-600 to-teal-600",
               },
@@ -497,7 +497,7 @@ const ClientDashboard = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-white">${(sale.quantite * (sale.produit?.prix ?? 0)).toFixed(2)}</p>
+                    <p className="font-bold text-white">{(sale.quantite * (sale.produit?.prix ?? 0)).toFixed(2)} dhs</p>
                     <p className="text-xs text-slate-400">{sale.quantite} unité(s)</p>
                   </div>
                 </div>
@@ -554,7 +554,7 @@ const ClientDashboard = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                        ${(sale.quantite * (sale.produit?.prix ?? 0)).toFixed(2)}
+                        {(sale.quantite * (sale.produit?.prix ?? 0)).toFixed(2)} dhs
                       </p>
                     </div>
                   </div>
@@ -748,7 +748,7 @@ const ClientDashboard = () => {
                       </div>
                       <div className="flex justify-between items-center pt-2">
                         <span className="text-2xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                          ${product.prix?.toFixed(2)}
+                          {product.prix?.toFixed(2)} dhs
                         </span>
                       </div>
                       <button
@@ -805,7 +805,7 @@ const ClientDashboard = () => {
                       />
                       <div className="flex-1">
                         <h3 className="font-bold text-white mb-2">{item.nom}</h3>
-                        <p className="text-slate-400 text-sm mb-3">${item.prix?.toFixed(2)}</p>
+                        <p className="text-slate-400 text-sm mb-3">{item.prix?.toFixed(2)} dhs</p>
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2 bg-slate-700/60 rounded-xl p-1">
                             <button
@@ -832,7 +832,7 @@ const ClientDashboard = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-white">
-                          ${((item.prix || 0) * item.quantity).toFixed(2)}
+                          {((item.prix || 0) * item.quantity).toFixed(2)} dhs
                         </p>
                       </div>
                     </div>

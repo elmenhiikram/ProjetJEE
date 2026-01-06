@@ -15,6 +15,16 @@ export interface SignupData {
   userType?: 'client' | 'employe' | 'investisseur';
   role?: string;
   photoUrl?: string;
+  
+  // Champs spécifiques investisseur
+  ice?: string;
+  nomEntreprise?: string;
+  adresseEntreprise?: string;
+  numeroEntreprise?: string;
+  emailEntreprise?: string;
+  logoUrl?: string;
+  domaineEntreprise?: string;
+  capitalDisponible?: number;
 }
 
 export interface UserData {

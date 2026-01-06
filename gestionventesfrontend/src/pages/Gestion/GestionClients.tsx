@@ -26,7 +26,9 @@ export default function GestionClients() {
     try {
       setLoading(true);
       const response = await clientApi.getAll();
-      setClients(response.data);
+      // Trier les clients par ID croissant (du plus petit au plus grand)
+      const sortedClients = (response.data || []).sort((a: Client, b: Client) => (a.id || 0) - (b.id || 0));
+      setClients(sortedClients);
     } catch (error) {
       console.error("Erreur lors du chargement des clients:", error);
       alert("Erreur lors du chargement des clients");

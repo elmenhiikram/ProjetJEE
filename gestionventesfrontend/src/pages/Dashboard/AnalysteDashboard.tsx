@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   LineChart,
   Line,
@@ -126,6 +127,7 @@ interface Alert {
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
 
 const AnalysteDashboard = () => {
+  const location = useLocation();
   const [activeSection, setActiveSection] = useState('overview');
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -287,15 +289,25 @@ const AnalysteDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const menuItems = [
-    { id: 'overview', label: 'Vue d\'ensemble' },
-    { id: 'analytics', label: 'Analytics' },
-    { id: 'products', label: 'Produits' },
-    { id: 'sales', label: 'Ventes' },
-    { id: 'clients', label: 'Clients' },
-    { id: 'categories', label: 'Catégories' },
-    { id: 'reports', label: 'Rapports' },
-  ];
+  // Déterminer la section active en fonction de la route
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/dashboard/analyste') {
+      setActiveSection('overview');
+    } else if (path === '/analytics') {
+      setActiveSection('analytics');
+    } else if (path === '/analytics/produits') {
+      setActiveSection('products');
+    } else if (path === '/analytics/ventes') {
+      setActiveSection('sales');
+    } else if (path === '/analytics/clients') {
+      setActiveSection('clients');
+    } else if (path === '/analytics/categories') {
+      setActiveSection('categories');
+    } else if (path === '/analytics/rapports') {
+      setActiveSection('reports');
+    }
+  }, [location.pathname]);
 
   const radarData = kpiData
     ? [
@@ -343,23 +355,6 @@ const AnalysteDashboard = () => {
               {errorMessage}
             </div>
           )}
-
-          {/* Navigation */}
-          <div className="mb-6 flex flex-wrap gap-2">
-            {menuItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id)}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  activeSection === item.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-800 text-gray-400 hover:bg-slate-700'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
 
           {/* Time Filter */}
           <div className="mb-6 flex flex-wrap gap-4 items-center">
@@ -436,7 +431,7 @@ const AnalysteDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard
                   title="Chiffre d'Affaires"
-                  value={`$${(dashboardStats?.chiffreAffaires || 0).toLocaleString()}`}
+                  value={`${(dashboardStats?.chiffreAffaires || 0).toLocaleString()} dhs`}
                   icon={<span>💰</span>}
                   color="green"
                   trend={kpiData?.growthRate ? { value: kpiData.growthRate, isPositive: kpiData.growthRate >= 0 } : undefined}
@@ -479,7 +474,7 @@ const AnalysteDashboard = () => {
         stroke="#94a3b8" 
         fontSize={12}
         label={{ 
-          value: 'CA ($)', 
+          value: 'CA (dhs)', 
           angle: -90,
           position: 'insideLeft',
           style: { fill: '#94a3b8', fontSize: 11 }
@@ -505,7 +500,7 @@ const AnalysteDashboard = () => {
         }}
         labelStyle={{ color: "#f1f5f9" }}
         formatter={(value, name) => {
-          if (name === "CA") return [`$${(value ?? 0).toLocaleString()}`, "Chiffre d'Affaires"];
+          if (name === "CA") return [`${(value ?? 0).toLocaleString()} dhs`, "Chiffre d'Affaires"];
           if (name === "Ventes") return [value ?? 0, "Nombre de ventes"];
           return [value ?? 0, name];
         }}
@@ -667,7 +662,7 @@ const AnalysteDashboard = () => {
                       stroke="#06b6d4"
                       strokeWidth={3}
                       fill="url(#colorValue)"
-                      name="Valeur ($)"
+                      name="Valeur (dhs)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -763,7 +758,7 @@ const AnalysteDashboard = () => {
                       {topProducts.map((product, i) => (
                         <tr key={i} className="border-b border-slate-700 hover:bg-slate-700/40">
                           <td className="px-6 py-4 font-medium text-white">{product.nom}</td>
-                          <td className="px-6 py-4 text-blue-400">${product.prix?.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-blue-400">{product.prix?.toFixed(2)} dhs</td>
                           <td className="px-6 py-4">
                             <span
                               className={`px-2 py-1 rounded text-xs font-bold ${
@@ -779,7 +774,7 @@ const AnalysteDashboard = () => {
                           </td>
                           <td className="px-6 py-4 text-slate-300">{product.nombreVentes || 0}</td>
                           <td className="px-6 py-4 text-emerald-400">
-                            ${product.chiffreAffaires?.toLocaleString() || '0'}
+                            {product.chiffreAffaires?.toLocaleString() || '0'} dhs
                           </td>
                         </tr>
                       ))}
@@ -804,13 +799,13 @@ const AnalysteDashboard = () => {
                 />
                 <StatCard
                   title="Chiffre d'affaires"
-                  value={`$${(dashboardStats?.chiffreAffaires || 0).toLocaleString()}`}
+                  value={`${(dashboardStats?.chiffreAffaires || 0).toLocaleString()} dhs`}
                   icon={<span>💰</span>}
                   color="green"
                 />
                 <StatCard
                   title="Panier moyen"
-                  value={`$${kpiData?.averageOrderValue?.toFixed(2) || '0.00'}`}
+                  value={`${kpiData?.averageOrderValue?.toFixed(2) || '0.00'} dhs`}
                   icon={<span>🛍️</span>}
                   color="purple"
                 />
@@ -856,7 +851,7 @@ const AnalysteDashboard = () => {
                   {trends.map((trend, i) => (
                     <div key={i} className="bg-slate-700/40 rounded-lg p-4 text-center">
                       <p className="text-slate-400 text-sm">{trend.period}</p>
-                      <p className="text-xl font-bold text-white">${trend.value.toLocaleString()}</p>
+                      <p className="text-xl font-bold text-white">{trend.value.toLocaleString()} dhs</p>
                       <p className={`text-xs font-semibold ${trend.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {trend.change >= 0 ? '↗' : '↘'} {Math.abs(trend.change)}%
                       </p>
@@ -887,7 +882,7 @@ const AnalysteDashboard = () => {
                           borderRadius: '8px',
                         }}
                       />
-                      <Bar dataKey="chiffreAffaires" name="CA ($)" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="chiffreAffaires" name="CA (dhs)" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -914,7 +909,7 @@ const AnalysteDashboard = () => {
                     <div className="flex items-center justify-between p-4 bg-slate-700/40 rounded-lg">
                       <span className="text-slate-300">Panier moyen</span>
                       <span className="text-xl font-bold text-white">
-                        ${kpiData?.averageOrderValue?.toFixed(2) || '0.00'}
+                        {kpiData?.averageOrderValue?.toFixed(2) || '0.00'} dhs
                       </span>
                     </div>
                   </div>
@@ -935,7 +930,7 @@ const AnalysteDashboard = () => {
                         <p className="text-xs text-slate-400">{client.nombreVentes || 0} achats</p>
                       </div>
                       <p className="text-lg font-bold text-emerald-400">
-                        ${client.chiffreAffaires?.toLocaleString() || '0'}
+                        {client.chiffreAffaires?.toLocaleString() || '0'} dhs
                       </p>
                     </div>
                   ))}
@@ -1029,7 +1024,7 @@ const AnalysteDashboard = () => {
                         <div className="flex justify-between">
                           <span className="text-slate-400">CA</span>
                           <span className="text-emerald-400 font-semibold">
-                            ${cat.chiffreAffaires?.toLocaleString() || '0'}
+                            {cat.chiffreAffaires?.toLocaleString() || '0'} dhs
                           </span>
                         </div>
                         <div className="flex justify-between">

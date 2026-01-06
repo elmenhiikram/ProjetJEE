@@ -17,6 +17,9 @@ import {
   TrendingDown,
   Home,
   Heart,
+  Activity,
+  PieChart,
+  FileText,
 } from 'lucide-react';
 
 type SidebarProps = {
@@ -51,17 +54,21 @@ const Sidebar = ({ isOpen, onClose, activeSection, setActiveSection, cartCount =
 
     if (user?.role === 'vendeur') {
       return [
-        { path: '/dashboard/vendeur', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/gestion/ventes', label: 'Gestion des Ventes', icon: DollarSign },
         { path: '/gestion/clients', label: 'Gestion des Clients', icon: Users },
+        { path: '/dashboard/vendeur', label: 'Catalogue', icon: LayoutDashboard },
       ];
     }
 
     if (user?.role === 'analyste') {
       return [
-        { path: '/dashboard/analyste', label: 'Dashboard', icon: LayoutDashboard },
-        { path: '/sales', label: 'Analyses Ventes', icon: TrendingUp },
-        { path: '/reports', label: 'Rapports', icon: TrendingUp },
+        { path: '/dashboard/analyste', label: "Vue d'ensemble", icon: Home },
+        { path: '/analytics', label: 'Analytics', icon: Activity },
+        { path: '/analytics/produits', label: 'Produits', icon: Package },
+        { path: '/analytics/ventes', label: 'Ventes', icon: TrendingUp },
+        { path: '/analytics/clients', label: 'Clients', icon: Users },
+        { path: '/analytics/categories', label: 'Catégories', icon: PieChart },
+        { path: '/analytics/rapports', label: 'Rapports', icon: FileText },
       ];
     }
 
@@ -87,6 +94,7 @@ const Sidebar = ({ isOpen, onClose, activeSection, setActiveSection, cartCount =
     if (user?.role === 'investisseur') {
       return [
         { path: '/dashboard/investisseur', label: 'Dashboard', icon: LayoutDashboard },
+        { path: '/catalogue/investisseur', label: 'Catalogue', icon: ShoppingBag },
         { path: '/gestion/investissements', label: 'Gestion des Investissements', icon: TrendingDown },
       ];
     }

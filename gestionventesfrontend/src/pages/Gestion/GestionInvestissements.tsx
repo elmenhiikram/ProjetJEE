@@ -5,8 +5,12 @@ import { productApi, type Product } from '../../api/productApi';
 import { categoryApi, type Category } from '../../api/categoryApi';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import Loader from '../../components/common/Loader';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function GestionInvestissements() {
+  const { user } = useAuth();
+  const isInvestisseur = user?.role === 'investisseur';
+  
   const [investissements, setInvestissements] = useState<Investment[]>([]);
   const [investisseurs, setInvestisseurs] = useState<Investor[]>([]);
   const [produits, setProduits] = useState<Product[]>([]);
@@ -56,8 +60,10 @@ export default function GestionInvestissements() {
         montantInvestissement: formData.montantInvestissement
       };
 
-      if (formData.investisseur?.id) {
-        dataToSend.investisseur = { id: formData.investisseur.id };
+      // Utiliser l'ID de l'investisseur connecté ou celui du formulaire
+      const investisseurId = isInvestisseur ? user?.id : formData.investisseur?.id;
+      if (investisseurId) {
+        dataToSend.investisseur = { id: investisseurId };
       }
       
       // Selon le type d'investissement, envoyer produit OU catégorie
@@ -267,36 +273,38 @@ export default function GestionInvestissements() {
             </h2>
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Investisseur *
-                  </label>
-                  <select
-                    required
-                    value={formData.investisseur?.id || ''}
-                    onChange={(e) => {
-                      const selectedInv = investisseurs.find(i => i.id === parseInt(e.target.value));
-                      setFormData({ 
-                        ...formData, 
-                        investisseur: selectedInv ? {
-                          id: selectedInv.id,
-                          nom: selectedInv.nom,
-                          prenom: selectedInv.prenom,
-                          nom_entreprise: selectedInv.nom_entreprise
-                        } : undefined 
-                      });
-                    }}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500"
-                    disabled={!!editingInvestissement}
-                  >
-                    <option value="">Sélectionner un investisseur</option>
-                    {investisseurs.map((inv) => (
-                      <option key={inv.id} value={inv.id}>
-                        {inv.nom_entreprise} - {inv.nom} {inv.prenom}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {!isInvestisseur && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Investisseur *
+                    </label>
+                    <select
+                      required
+                      value={formData.investisseur?.id || ''}
+                      onChange={(e) => {
+                        const selectedInv = investisseurs.find(i => i.id === parseInt(e.target.value));
+                        setFormData({ 
+                          ...formData, 
+                          investisseur: selectedInv ? {
+                            id: selectedInv.id,
+                            nom: selectedInv.nom,
+                            prenom: selectedInv.prenom,
+                            nom_entreprise: selectedInv.nom_entreprise
+                          } : undefined 
+                        });
+                      }}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+                      disabled={!!editingInvestissement}
+                    >
+                      <option value="">Sélectionner un investisseur</option>
+                      {investisseurs.map((inv) => (
+                        <option key={inv.id} value={inv.id}>
+                          {inv.nom_entreprise} - {inv.nom} {inv.prenom}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
