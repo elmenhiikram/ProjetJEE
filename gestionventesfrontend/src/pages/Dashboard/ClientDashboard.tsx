@@ -5,11 +5,9 @@ import {
   Star,
   Search,
   Package,
-  Settings,
   Calendar,
   Clock,
   Check,
-  Home,
   Loader,
   AlertCircle,
   Plus,
@@ -23,6 +21,7 @@ import { categoryApi, type Category } from "../../api/categoryApi";
 import { clientApi, type Client } from "../../api/clientApi";
 import { saleApi, type SaleRequest } from "../../api/saleApi";
 import { fetchCustomerPurchases, type CustomerPurchase } from "../../services/clientService";
+import { useClientDashboard } from "../../layouts/DashboardLayout";
 
 interface CartItem extends Product {
   quantity: number;
@@ -38,6 +37,7 @@ interface ProfileData {
 
 const ClientDashboard = () => {
   const { user } = useAuth();
+  const { setClientDashboardState } = useClientDashboard();
   const [activeSection, setActiveSection] = useState<string>("overview");
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -54,7 +54,6 @@ const ClientDashboard = () => {
   const [sales, setSales] = useState<CustomerPurchase[]>([]);
   const [totalSpent, setTotalSpent] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
-  const [editingProfile, setEditingProfile] = useState(false);
 
   const [profileData, setProfileData] = useState<ProfileData>({
     nom: user?.name || "Client",
@@ -83,32 +82,6 @@ const ClientDashboard = () => {
       console.error("Erreur chargement panier:", error);
     }
     return [];
-  };
-
-  // Mise à jour du stock
-  const updateProductStock = async (productId: number, quantityToRemove: number): Promise<boolean> => {
-    try {
-      const response = await productApi.getById(productId);
-      const product = response.data;
-      const currentStock = product.quantite || 0;
-      const newStock = Math.max(0, currentStock - quantityToRemove);
-
-      await productApi.update(productId, {
-        ...product,
-        quantite: newStock,
-      });
-
-      setProducts((prevProducts) =>
-        prevProducts.map((p) =>
-          p.id === productId ? { ...p, quantite: newStock } : p
-        )
-      );
-
-      return true;
-    } catch (error) {
-      console.error("Erreur mise à jour stock:", error);
-      return false;
-    }
   };
 
   // Charger les produits
@@ -216,18 +189,7 @@ const ClientDashboard = () => {
       const timeString = now.toTimeString();
       const heureVente = timeString.split(" ")[0];
 
-      // Mettre à jour le stock pour chaque produit
-      for (const item of cart) {
-        if (item.id) {
-          const success = await updateProductStock(item.id, item.quantity);
-          if (!success) {
-            setErrorMessage(`Erreur mise à jour stock pour ${item.nom}`);
-            return;
-          }
-        }
-      }
-
-      // Créer les ventes
+      // Créer les ventes (le stock sera mis à jour automatiquement par le backend)
       const ventePromises = cart.map((item) => {
         if (!item.id) return Promise.resolve();
         
@@ -247,39 +209,15 @@ const ClientDashboard = () => {
       setSuccessMessage("Commande confirmée avec succès !");
       setCart([]);
       localStorage.removeItem("user_cart");
-      await fetchClientData();
-      await fetchProducts();
+      
+      // Recharger les données pour avoir les stocks à jour
+      await Promise.all([fetchClientData(), fetchProducts()]);
+      
       setTimeout(() => setActiveSection("ventes"), 2000);
-    } catch (error) {
-      setErrorMessage("Impossible de confirmer la commande: " + (error as Error).message);
+    } catch (error: any) {
       console.error("Checkout error:", error);
-    }
-  };
-
-  // Gestion du profil
-  const handleProfileSave = async () => {
-    try {
-      if (clientData?.id) {
-        const updatedClient: Client = {
-          ...clientData,
-          nom: profileData.nom,
-          prenom: profileData.prenom,
-          email: profileData.email,
-          numeroTel: profileData.numeroTel,
-          address: profileData.address,
-        };
-
-        await clientApi.update(clientData.id, updatedClient);
-        setClientData(updatedClient);
-      }
-
-      setEditingProfile(false);
-      setSuccessMessage("Profil mis à jour avec succès !");
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (error) {
-      console.error("Erreur mise à jour profil:", error);
-      setErrorMessage("Impossible de mettre à jour le profil");
-      setTimeout(() => setErrorMessage(""), 3000);
+      const errorMsg = error?.response?.data?.message || error?.message || "Erreur lors de la confirmation de la commande";
+      setErrorMessage(errorMsg);
     }
   };
 
@@ -304,6 +242,16 @@ const ClientDashboard = () => {
 
     initializeDashboard();
   }, [user?.email]);
+
+  // Synchroniser l'état avec le layout pour la sidebar
+  useEffect(() => {
+    const productsInCart = cart.reduce((sum, item) => sum + item.quantity, 0);
+    setClientDashboardState({
+      activeSection,
+      setActiveSection,
+      cartCount: productsInCart,
+    });
+  }, [activeSection, cart, setClientDashboardState]);
 
   // Fonctions de filtrage
   const handleSearch = (value: string) => {
@@ -344,6 +292,16 @@ const ClientDashboard = () => {
   // Gestion du panier
   const addToCart = (product: Product) => {
     const existingItem = cart.find((item) => item.id === product.id);
+    const currentQuantityInCart = existingItem ? existingItem.quantity : 0;
+    const availableStock = product.quantite || 0;
+    
+    // Vérifier si le stock est suffisant
+    if (currentQuantityInCart >= availableStock) {
+      setErrorMessage(`Stock insuffisant pour ${product.nom}. Stock disponible: ${availableStock}`);
+      setTimeout(() => setErrorMessage(""), 3000);
+      return;
+    }
+
     let newCart: CartItem[];
 
     if (existingItem) {
@@ -367,6 +325,17 @@ const ClientDashboard = () => {
   };
 
   const updateQuantity = (productId: number, quantity: number) => {
+    // Trouver le produit pour vérifier le stock
+    const product = products.find(p => p.id === productId);
+    const availableStock = product?.quantite || 0;
+    
+    // Vérifier si la quantité demandée ne dépasse pas le stock
+    if (quantity > availableStock) {
+      setErrorMessage(`Stock insuffisant. Stock disponible: ${availableStock}`);
+      setTimeout(() => setErrorMessage(""), 3000);
+      return;
+    }
+
     let newCart: CartItem[];
     if (quantity <= 0) {
       newCart = cart.filter((item) => item.id !== productId);
@@ -389,15 +358,6 @@ const ClientDashboard = () => {
   const cartTotal = cart.reduce((sum, item) => sum + (item.prix || 0) * item.quantity, 0);
   const productsInCart = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const menuItems = [
-    { id: "overview", label: "Overview", icon: Home },
-    { id: "ventes", label: "Mes Achats", icon: Package },
-    { id: "products", label: "Shop", icon: ShoppingCart },
-    { id: "wishlist", label: "Wishlist", icon: Heart },
-    { id: "cart", label: "Panier", icon: ShoppingCart },
-    { id: "profile", label: "Profil", icon: Settings },
-  ];
-
   return (
     <div className="space-y-6">
       {/* Messages de succès/erreur */}
@@ -414,34 +374,6 @@ const ClientDashboard = () => {
           <p className="text-red-300 text-sm font-medium">{errorMessage}</p>
         </div>
       )}
-
-      {/* Menu de navigation */}
-      <div className="bg-slate-800/60 backdrop-blur-xl rounded-xl border border-slate-700/50 p-4">
-        <div className="flex flex-wrap gap-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                  activeSection === item.id
-                    ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg"
-                    : "text-slate-300 hover:bg-slate-700/60"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="font-medium text-sm">{item.label}</span>
-                {item.id === "cart" && cart.length > 0 && (
-                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                    {productsInCart}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       {/* OVERVIEW */}
       {activeSection === "overview" && (
@@ -878,94 +810,6 @@ const ClientDashboard = () => {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* PROFIL */}
-      {activeSection === "profile" && (
-        <div className="space-y-6">
-          <h2 className="text-3xl font-black mb-2 text-white">Mon Profil</h2>
-          <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Nom</label>
-                  <input
-                    type="text"
-                    value={profileData.nom}
-                    onChange={(e) => setProfileData({ ...profileData, nom: e.target.value })}
-                    disabled={!editingProfile}
-                    className="w-full px-4 py-3 bg-slate-700/60 rounded-xl border border-slate-600/50 text-white focus:outline-none focus:border-blue-500/50 disabled:opacity-50"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Prénom</label>
-                  <input
-                    type="text"
-                    value={profileData.prenom}
-                    onChange={(e) => setProfileData({ ...profileData, prenom: e.target.value })}
-                    disabled={!editingProfile}
-                    className="w-full px-4 py-3 bg-slate-700/60 rounded-xl border border-slate-600/50 text-white focus:outline-none focus:border-blue-500/50 disabled:opacity-50"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={profileData.email}
-                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-3 bg-slate-700/60 rounded-xl border border-slate-600/50 text-white focus:outline-none focus:border-blue-500/50 disabled:opacity-50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-2">Téléphone</label>
-                <input
-                  type="text"
-                  value={profileData.numeroTel}
-                  onChange={(e) => setProfileData({ ...profileData, numeroTel: e.target.value })}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-3 bg-slate-700/60 rounded-xl border border-slate-600/50 text-white focus:outline-none focus:border-blue-500/50 disabled:opacity-50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-2">Adresse</label>
-                <input
-                  type="text"
-                  value={profileData.address}
-                  onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-3 bg-slate-700/60 rounded-xl border border-slate-600/50 text-white focus:outline-none focus:border-blue-500/50 disabled:opacity-50"
-                />
-              </div>
-            </div>
-            <div className="flex gap-4 mt-6">
-              {editingProfile ? (
-                <>
-                  <button
-                    onClick={handleProfileSave}
-                    className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl text-white font-semibold hover:shadow-lg transition-all"
-                  >
-                    Enregistrer
-                  </button>
-                  <button
-                    onClick={() => setEditingProfile(false)}
-                    className="flex-1 py-3 bg-slate-700 rounded-xl text-white font-semibold hover:bg-slate-600 transition-all"
-                  >
-                    Annuler
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setEditingProfile(true)}
-                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl text-white font-semibold hover:shadow-lg transition-all"
-                >
-                  Modifier le profil
-                </button>
-              )}
-            </div>
-          </div>
         </div>
       )}
     </div>

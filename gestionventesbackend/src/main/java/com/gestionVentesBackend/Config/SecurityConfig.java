@@ -37,10 +37,16 @@ public class SecurityConfig {
                 // ETL: réservé à l'analyste
                 .requestMatchers("/api/etl/**").hasRole("ANALYST")
 
-                // CRUD produit/vente réservé à ADMIN + VENDEUR
-                .requestMatchers(HttpMethod.POST, "/produits/**", "/ventes/**").hasAnyRole("ADMIN", "VENDEUR")
-                .requestMatchers(HttpMethod.PUT, "/produits/**", "/ventes/**").hasAnyRole("ADMIN", "VENDEUR")
-                .requestMatchers(HttpMethod.DELETE, "/produits/**", "/ventes/**").hasAnyRole("ADMIN", "VENDEUR")
+                // CRUD produit réservé à ADMIN + VENDEUR
+                .requestMatchers(HttpMethod.POST, "/produits/**").hasAnyRole("ADMIN", "VENDEUR")
+                .requestMatchers(HttpMethod.PUT, "/produits/**").hasAnyRole("ADMIN", "VENDEUR")
+                .requestMatchers(HttpMethod.DELETE, "/produits/**").hasAnyRole("ADMIN", "VENDEUR")
+
+                // Création de vente: ADMIN, VENDEUR et CLIENT
+                .requestMatchers(HttpMethod.POST, "/ventes/**").hasAnyRole("ADMIN", "VENDEUR", "CLIENT")
+                // Modification/Suppression de vente: réservé à ADMIN + VENDEUR
+                .requestMatchers(HttpMethod.PUT, "/ventes/**").hasAnyRole("ADMIN", "VENDEUR")
+                .requestMatchers(HttpMethod.DELETE, "/ventes/**").hasAnyRole("ADMIN", "VENDEUR")
 
                 // Le reste reste accessible (mode dev)
                 .anyRequest().permitAll()

@@ -1,12 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useOutletContext } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from '@/components/common/Sidebar';
 import DashboardNavbar from '@/components/common/DashboardNavbar';
 
+type OutletContext = {
+  setClientDashboardState: (state: {
+    activeSection: string;
+    setActiveSection: (section: string) => void;
+    cartCount: number;
+  }) => void;
+};
+
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pageTitle, setPageTitle] = useState('Dashboard');
+  const [clientDashboardState, setClientDashboardState] = useState<{
+    activeSection: string;
+    setActiveSection: (section: string) => void;
+    cartCount: number;
+  } | null>(null);
   const location = useLocation();
 
   // Mapper les routes aux titres
@@ -43,6 +56,9 @@ const DashboardLayout = () => {
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        activeSection={clientDashboardState?.activeSection}
+        setActiveSection={clientDashboardState?.setActiveSection}
+        cartCount={clientDashboardState?.cartCount}
       />
 
       {/* Main Content */}
@@ -67,7 +83,7 @@ const DashboardLayout = () => {
 
         {/* Page content */}
         <main className="p-6">
-          <Outlet />
+          <Outlet context={{ setClientDashboardState } satisfies OutletContext} />
         </main>
       </div>
     </div>
@@ -75,3 +91,7 @@ const DashboardLayout = () => {
 };
 
 export default DashboardLayout;
+
+export function useClientDashboard() {
+  return useOutletContext<OutletContext>();
+}

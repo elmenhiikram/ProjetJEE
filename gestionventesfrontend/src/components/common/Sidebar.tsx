@@ -15,18 +15,24 @@ import {
   Zap,
   X,
   TrendingDown,
+  Home,
+  Heart,
 } from 'lucide-react';
 
 type SidebarProps = {
   isOpen: boolean;
   onClose: () => void;
+  activeSection?: string;
+  setActiveSection?: (section: string) => void;
+  cartCount?: number;
 };
 
-const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
+const Sidebar = ({ isOpen, onClose, activeSection, setActiveSection, cartCount = 0 }: SidebarProps) => {
   const location = useLocation();
   const { user } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
+  const isClientDashboard = location.pathname === '/dashboard/client';
 
   const getMenuItems = () => {
     if (user?.role === 'admin') {
@@ -60,6 +66,17 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     }
 
     if (user?.role === 'client') {
+      // Si on est sur le dashboard client, afficher les sections internes
+      if (isClientDashboard && setActiveSection) {
+        return [
+          { id: 'overview', label: 'Overview', icon: Home },
+          { id: 'ventes', label: 'Mes Achats', icon: Package },
+          { id: 'products', label: 'Shop', icon: ShoppingBag },
+          { id: 'wishlist', label: 'Wishlist', icon: Heart },
+          { id: 'cart', label: 'Panier', icon: ShoppingCart, badge: cartCount },
+        ];
+      }
+      // Sinon, afficher les liens de navigation classiques
       return [
         { path: '/dashboard/client', label: 'Mon Espace', icon: LayoutDashboard },
         { path: '/products', label: 'Catalogue', icon: ShoppingBag },
@@ -117,8 +134,38 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
         {/* Navigation */}
         <nav className="p-4 space-y-2">
-          {menuItems.map((item) => {
+          {menuItems.map((item: any) => {
             const Icon = item.icon;
+            
+            // Si c'est une section interne (client dashboard)
+            if (item.id && isClientDashboard && setActiveSection) {
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveSection(item.id);
+                    onClose();
+                  }}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    activeSection === item.id
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg text-white'
+                      : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-5 h-5" />
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </div>
+                  {item.badge > 0 && (
+                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            }
+            
+            // Sinon, c'est un lien de navigation classique
             return (
               <Link
                 key={item.path}
