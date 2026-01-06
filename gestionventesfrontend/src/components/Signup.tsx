@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSignup } from '../hooks/useSignup';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 const Signup = () => {
+    const navigate = useNavigate();
     const { handleSignup, isLoading, error, success, clearMessages } = useSignup();
     const [formData, setFormData] = useState({
         nom: '',
@@ -98,6 +101,15 @@ const Signup = () => {
 
     return (
         <div className="w-full max-w-md bg-slate-950/80 backdrop-blur-xl border border-slate-800/50 p-8 space-y-6 rounded-xl shadow-2xl shadow-black/20">
+            {/* Retour à l'accueil */}
+            <button
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2 text-slate-400 hover:text-blue-400 transition-colors mb-4"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm">Retour à l'accueil</span>
+            </button>
+
             {/* Message Box */}
             {message && (
                 <div

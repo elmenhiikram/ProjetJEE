@@ -112,7 +112,7 @@ export default function LandingPage() {
           : []
         
         setAllProducts(productsData)
-        setProducts(productsData)
+        // Ne pas définir products ici, laisser le useEffect de filtrage le faire
         
         // Trouver le produit le plus vendu
         const mostSoldProduct = productsData.reduce((prev, current) => {
@@ -157,12 +157,18 @@ export default function LandingPage() {
         product.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.description?.toLowerCase().includes(searchQuery.toLowerCase())
       )
+    } else {
+      // Filtrer par rating > 2.5 seulement si pas de recherche active
+      filtered = filtered.filter(product => (product.rating || 0) > 2.5)
     }
     
     // Filtrer par catégorie
     if (selectedCategory !== null) {
       filtered = filtered.filter(product => product.categorie?.id === selectedCategory)
     }
+    
+    // Trier par rating décroissant
+    filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
     
     setProducts(filtered)
   }, [searchQuery, selectedCategory, allProducts])
@@ -229,27 +235,8 @@ export default function LandingPage() {
         .animate-glow { animation: glow 2s ease-in-out infinite; }
       `}</style>
 
-      {/* Top Bar */}
-      <div className="bg-slate-900/80 border-b border-slate-800/50 py-2">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center text-sm">
-          <div className="flex items-center gap-4 text-slate-400">
-            <span>Français</span>
-            <span>EUR</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="text-slate-400 hover:text-blue-400 transition-colors">Aide</button>
-            <button onClick={() => navigate('/signup')} className="text-slate-400 hover:text-blue-400 transition-colors">
-              Rejoignez-nous
-            </button>
-            <button onClick={() => navigate('/login')} className="text-slate-400 hover:text-blue-400 transition-colors">
-              Connexion
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50 shadow-lg shadow-black/20">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50 shadow-lg shadow-black/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-4 flex items-center justify-between">
             <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/')}>
@@ -266,41 +253,24 @@ export default function LandingPage() {
               <button onClick={() => navigate('/')} className="text-white font-medium hover:text-blue-400 transition-colors border-b-2 border-blue-400 pb-1">
                 Accueil
               </button>
-              <button onClick={() => navigate('/login')} className="text-slate-300 font-medium hover:text-blue-400 transition-colors">Boutique</button>
-              <button className="text-slate-300 font-medium hover:text-blue-400 transition-colors">À propos</button>
-              <button className="text-slate-300 font-medium hover:text-blue-400 transition-colors">Contact</button>
+              <a href="#a-propos" className="text-slate-300 font-medium hover:text-blue-400 transition-colors">À propos</a>
+              <a href="#produits" className="text-slate-300 font-medium hover:text-blue-400 transition-colors">Boutique</a>
+              <a href="#contact" className="text-slate-300 font-medium hover:text-blue-400 transition-colors">Contact</a>
             </nav>
 
-            {/* Search Bar */}
-            <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-800/60 rounded-xl border border-slate-700/50 max-w-md">
-              <Search className="w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Rechercher des produits..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent text-white placeholder-slate-400 focus:outline-none w-full"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="p-1 hover:bg-slate-700 rounded">
-                  <X className="w-4 h-4 text-slate-400" />
-                </button>
-              )}
-            </div>
-
-            {/* Header Icons */}
-            <div className="flex items-center gap-4">
-              <button className="p-2 text-slate-300 hover:text-blue-400 transition-colors">
-                <Heart className="w-5 h-5" />
+            {/* Auth Buttons */}
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => navigate('/login')}
+                className="px-4 py-2 text-slate-300 hover:text-white font-medium transition-colors"
+              >
+                Login
               </button>
-              <button className="p-2 text-slate-300 hover:text-blue-400 transition-colors relative">
-                <ShoppingCart className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full text-xs text-white flex items-center justify-center">
-                  0
-                </span>
-              </button>
-              <button onClick={() => navigate('/login')} className="p-2 text-slate-300 hover:text-blue-400 transition-colors">
-                <User className="w-5 h-5" />
+              <button 
+                onClick={() => navigate('/signup')}
+                className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-lg text-white font-semibold shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5"
+              >
+                Sign up
               </button>
             </div>
           </div>
@@ -347,7 +317,7 @@ export default function LandingPage() {
               <p className="text-slate-400">{topProduct?.description || ""}</p>
 
               <button
-                onClick={() => navigate('/signup')}
+                onClick={() => navigate('/login')}
                 className="group px-6 py-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-xl text-white font-semibold flex items-center gap-2 transition-all"
               >
                 <ShoppingBag className="w-5 h-5" />
@@ -375,7 +345,7 @@ export default function LandingPage() {
             <div className="relative">
               <div className="absolute top-4 right-4 z-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl px-4 py-2 text-white">
                 <span className="text-xs">Prix</span>
-                <p className="text-2xl font-black">{topProduct?.prix || 0}€</p>
+                <p className="text-2xl font-black">{topProduct?.prix || 0} DHS</p>
               </div>
 
               <div className="relative h-80 lg:h-96 rounded-3xl overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
@@ -385,22 +355,42 @@ export default function LandingPage() {
                   className="w-full h-full object-cover"
                 />
               </div>
-
-              <div className="absolute -bottom-4 right-0 flex gap-2">
-                {products.slice(1, 3).map((product) => (
-                  <div
-                    key={product.id}
-                    className="w-16 h-16 rounded-xl bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 overflow-hidden"
-                  >
-                    <img
-                      src={product.image || `/placeholder.svg?height=64&width=64`}
-                      alt={product.nom}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* About TechShop Section */}
+      <section id="a-propos" className="py-12 lg:py-16 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto text-center space-y-6">
+            <div className="inline-flex items-center gap-2 text-blue-400 text-sm mb-2">
+              <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+              À Propos de Nous
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black text-white">
+              Bienvenue chez{" "}
+              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                TechShop
+              </span>
+            </h2>
+            <p className="text-slate-400 text-lg leading-relaxed">
+              TechShop est votre destination de confiance pour tous vos besoins d'achat en ligne. 
+              Depuis notre création, nous nous engageons à offrir une expérience d'achat exceptionnelle avec 
+              une large gamme de produits de qualité, des prix compétitifs et un service client irréprochable.
+            </p>
+            <p className="text-slate-400 leading-relaxed">
+              Notre mission est de rendre vos achats simples et agréables. Nous sélectionnons soigneusement 
+              chaque produit pour garantir votre satisfaction, offrons des paiements sécurisés, une livraison 
+              rapide et un support disponible 24/7. Chez TechShop, votre confiance est notre priorité et nous 
+              sommes là pour vous accompagner dans chacun de vos achats.
+            </p>
+            <button
+              onClick={() => navigate('/signup')}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-xl text-white font-semibold shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5"
+            >
+              Rejoignez-nous
+            </button>
           </div>
         </div>
       </section>
@@ -436,8 +426,6 @@ export default function LandingPage() {
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-4">
             {categories.length > 0 ? (
               categories.map((category) => {
-                const defaultCat = defaultCategories.find(dc => dc.name.toLowerCase().includes(category.nom.toLowerCase())) || defaultCategories[0]
-                const Icon = defaultCat.icon
                 return (
                   <button
                     key={category.id}
@@ -446,15 +434,12 @@ export default function LandingPage() {
                       selectedCategory === category.id ? 'scale-105' : ''
                     }`}
                   >
-                    <div className={`p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 flex flex-col items-center ${
+                    <div className={`p-4 rounded-2xl border transition-all duration-300 hover:-translate-y-1 flex items-center justify-center ${
                       selectedCategory === category.id
                         ? 'bg-blue-600/20 border-blue-500/50'
                         : 'bg-slate-900/60 backdrop-blur-xl border-slate-700/50 hover:border-blue-500/50'
                     }`}>
-                      <Icon className={`w-10 h-10 mb-3 transition-colors ${
-                        selectedCategory === category.id ? 'text-blue-400' : 'text-slate-400 group-hover:text-blue-400'
-                      }`} />
-                      <p className={`text-xs font-semibold text-center transition-colors ${
+                      <p className={`text-sm font-semibold text-center transition-colors ${
                         selectedCategory === category.id ? 'text-white' : 'text-slate-300 group-hover:text-white'
                       }`}>
                         {category.nom}
@@ -466,9 +451,8 @@ export default function LandingPage() {
             ) : (
               defaultCategories.map((category, index) => (
                 <div key={index} className="group cursor-pointer">
-                  <div className="p-6 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 group-hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-1 flex flex-col items-center">
-                    <category.icon className="w-10 h-10 text-slate-400 group-hover:text-blue-400 mb-3 transition-colors" />
-                    <p className="text-xs font-semibold text-slate-300 group-hover:text-white text-center transition-colors">
+                  <div className="p-4 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 group-hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-1 flex items-center justify-center">
+                    <p className="text-sm font-semibold text-slate-300 group-hover:text-white text-center transition-colors">
                       {category.name}
                     </p>
                   </div>
@@ -479,63 +463,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Promotional Banner with Countdown */}
-      <section className="py-12 lg:py-16 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-8 lg:p-12">
-              <div className="space-y-6">
-                <div className="inline-flex items-center gap-2 text-red-400 text-sm">
-                  <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
-                  Ne ratez pas!
-                </div>
-
-                <h2 className="text-3xl md:text-4xl font-black text-white">
-                  Améliorez Votre
-                  <br />
-                  <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                    Expérience Musicale
-                  </span>
-                </h2>
-
-                <div className="flex gap-3">
-                  {[
-                    { value: countdown.days, label: "Jour" },
-                    { value: countdown.hours, label: "Hrs" },
-                    { value: countdown.mins, label: "Min" },
-                    { value: countdown.secs, label: "Sec" },
-                  ].map((item, index) => (
-                    <div key={index} className="text-center">
-                      <div className="w-14 h-14 rounded-xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center">
-                        <span className="text-xl font-black text-white">{item.value.toString().padStart(2, "0")}</span>
-                      </div>
-                      <span className="text-xs text-slate-400 mt-1">{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => navigate('/signup')}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-xl text-white font-semibold shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5"
-                >
-                  Découvrez-le!
-                </button>
-              </div>
-
-              <div className="relative h-64 lg:h-80">
-                <img
-                  src={topProduct?.image || "/placeholder.svg?height=320&width=400"}
-                  alt="Produit vedette"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Products Grid Section */}
-      <section className="py-12 lg:py-16 relative z-10">
+      <section id="produits" className="py-12 lg:py-16 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -549,6 +478,24 @@ export default function LandingPage() {
                   Produits
                 </span>
               </h2>
+              
+              {/* Search Bar */}
+              <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/60 rounded-xl border border-slate-700/50 max-w-md mt-4">
+                <Search className="w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Rechercher des produits..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-transparent text-white placeholder-slate-400 focus:outline-none w-full"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="p-1 hover:bg-slate-700 rounded">
+                    <X className="w-4 h-4 text-slate-400" />
+                  </button>
+                )}
+              </div>
+
               {searchQuery && (
                 <p className="text-slate-400 text-sm mt-2">
                   {products.length} résultat{products.length !== 1 ? 's' : ''} pour "{searchQuery}"
@@ -559,14 +506,6 @@ export default function LandingPage() {
                   Catégorie: {categories.find(c => c.id === selectedCategory)?.nom}
                 </p>
               )}
-            </div>
-            <div className="flex gap-2">
-              <button className="p-2 rounded-full bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:text-white transition-colors">
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button className="p-2 rounded-full bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:text-white transition-colors">
-                <ChevronRight className="w-5 h-5" />
-              </button>
             </div>
           </div>
 
@@ -608,10 +547,6 @@ export default function LandingPage() {
                           alt={product.nom}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
-
-                        <div className="absolute top-3 right-3 px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs rounded-lg font-bold">
-                          {getBadge(index)}
-                        </div>
                       </div>
 
                       <div className="p-4 space-y-2">
@@ -622,17 +557,13 @@ export default function LandingPage() {
                               className={`w-3 h-3 ${i < Math.round(product.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-slate-600"}`}
                             />
                           ))}
-                          <span className="text-xs text-slate-500 ml-1">({Math.floor(Math.random() * 50) + 10})</span>
                         </div>
 
                         <h3 className="text-sm font-semibold text-white line-clamp-1">{product.nom}</h3>
 
                         <div className="flex items-center gap-2">
                           <span className="text-lg font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                            {product.prix}€
-                          </span>
-                          <span className="text-sm text-slate-500 line-through">
-                            {getOriginalPrice(product.prix, index)}€
+                            {product.prix} DHS
                           </span>
                         </div>
 
@@ -646,46 +577,13 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-
-              <div className="text-center mt-10">
-                <button
-                  onClick={() => navigate('/login')}
-                  className="px-8 py-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-blue-500/50 rounded-full text-white font-semibold backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5"
-                >
-                  Voir Tous les Produits
-                </button>
-              </div>
             </>
           )}
         </div>
       </section>
 
-      {/* Why Choose Us */}
-      <section className="py-12 lg:py-16 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="group relative p-6 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="relative flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/25">
-                    <feature.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-white mb-1">{feature.title}</h3>
-                    <p className="text-slate-400 text-sm leading-relaxed">{feature.description}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
-      <footer className="relative z-10 border-t border-slate-800/50 bg-slate-950/80 backdrop-blur-xl mt-12">
+      <footer id="contact" className="relative z-10 border-t border-slate-800/50 bg-slate-950/80 backdrop-blur-xl mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-4">
@@ -714,26 +612,6 @@ export default function LandingPage() {
             </div>
 
             <div className="space-y-4">
-              <h4 className="text-white font-bold text-sm">Boutique</h4>
-              <ul className="space-y-2">
-                <li><button className="text-slate-400 hover:text-blue-400 text-sm transition-colors">Tous les Produits</button></li>
-                <li><button className="text-slate-400 hover:text-blue-400 text-sm transition-colors">Meilleures Ventes</button></li>
-                <li><button className="text-slate-400 hover:text-blue-400 text-sm transition-colors">Nouveautés</button></li>
-                <li><button className="text-slate-400 hover:text-blue-400 text-sm transition-colors">Offres</button></li>
-              </ul>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="text-white font-bold text-sm">Entreprise</h4>
-              <ul className="space-y-2">
-                <li><button className="text-slate-400 hover:text-blue-400 text-sm transition-colors">À Propos</button></li>
-                <li><button className="text-slate-400 hover:text-blue-400 text-sm transition-colors">Contact</button></li>
-                <li><button className="text-slate-400 hover:text-blue-400 text-sm transition-colors">Conditions</button></li>
-                <li><button className="text-slate-400 hover:text-blue-400 text-sm transition-colors">Confidentialité</button></li>
-              </ul>
-            </div>
-
-            <div className="space-y-4">
               <h4 className="text-white font-bold text-sm">Contact</h4>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -752,13 +630,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-slate-800/50 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="pt-8 border-t border-slate-800/50 flex flex-col md:flex-row justify-center items-center gap-4">
             <p className="text-slate-500 text-sm">© 2025 TechShop. Tous droits réservés.</p>
-            <div className="flex gap-6">
-              <button className="text-slate-500 hover:text-blue-400 text-sm transition-colors">Confidentialité</button>
-              <button className="text-slate-500 hover:text-blue-400 text-sm transition-colors">Conditions</button>
-              <button className="text-slate-500 hover:text-blue-400 text-sm transition-colors">Cookies</button>
-            </div>
           </div>
         </div>
       </footer>
