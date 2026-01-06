@@ -1,9 +1,21 @@
 import { useEffect, useState } from 'react';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 import { dashboardApi } from '../../api/dashboardApi';
 import StatCard from '../../components/charts/StatCard';
-import BarChart from '../../components/charts/BarChart';
-import PieChart from '../../components/charts/PieChart';
-import LineChart from '../../components/charts/LineChart';
 import Loader from '../../components/common/Loader';
 
 const Dashboard = () => {
@@ -70,64 +82,78 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Ventes par Mois</h2>
-          <LineChart
-            data={{
-              labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
-              datasets: [
-                {
-                  label: 'Ventes',
-                  data: [12, 19, 3, 5, 2, 3],
-                  borderColor: 'rgb(59, 130, 246)',
-                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                },
-              ],
-            }}
-          />
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={[
+              { mois: 'Jan', ventes: 12 },
+              { mois: 'Fév', ventes: 19 },
+              { mois: 'Mar', ventes: 3 },
+              { mois: 'Avr', ventes: 5 },
+              { mois: 'Mai', ventes: 2 },
+              { mois: 'Juin', ventes: 3 }
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="mois" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="ventes" stroke="#3b82f6" strokeWidth={2} name="Ventes" />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Ventes par Catégorie</h2>
-          <PieChart
-            data={{
-              labels: ['Électronique', 'Vêtements', 'Alimentation', 'Autres'],
-              datasets: [
-                {
-                  label: 'Ventes',
-                  data: [300, 150, 100, 50],
-                  backgroundColor: [
-                    'rgba(59, 130, 246, 0.8)',
-                    'rgba(16, 185, 129, 0.8)',
-                    'rgba(245, 158, 11, 0.8)',
-                    'rgba(239, 68, 68, 0.8)',
-                  ],
-                  borderColor: [
-                    'rgb(59, 130, 246)',
-                    'rgb(16, 185, 129)',
-                    'rgb(245, 158, 11)',
-                    'rgb(239, 68, 68)',
-                  ],
-                },
-              ],
-            }}
-          />
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={[
+                  { name: 'Électronique', value: 300 },
+                  { name: 'Vêtements', value: 150 },
+                  { name: 'Alimentation', value: 100 },
+                  { name: 'Autres', value: 50 }
+                ]}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {[
+                  { color: '#3b82f6' },
+                  { color: '#10b981' },
+                  { color: '#f59e0b' },
+                  { color: '#ef4444' }
+                ].map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">Produits les Plus Vendus</h2>
-        <BarChart
-          data={{
-            labels: ['Produit A', 'Produit B', 'Produit C', 'Produit D', 'Produit E'],
-            datasets: [
-              {
-                label: 'Quantité Vendue',
-                data: [65, 59, 80, 81, 56],
-                backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                borderColor: 'rgb(59, 130, 246)',
-              },
-            ],
-          }}
-        />
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={[
+            { produit: 'Produit A', quantite: 65 },
+            { produit: 'Produit B', quantite: 59 },
+            { produit: 'Produit C', quantite: 80 },
+            { produit: 'Produit D', quantite: 81 },
+            { produit: 'Produit E', quantite: 56 }
+          ]}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="produit" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="quantite" fill="#3b82f6" name="Quantité Vendue" />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

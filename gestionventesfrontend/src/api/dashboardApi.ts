@@ -1,16 +1,25 @@
 import axiosInstance from './axiosConfig';
 
 export interface DashboardStats {
-  totalSales: number;
-  totalRevenue: number;
-  totalProducts: number;
-  totalClients: number;
-  totalEmployees: number;
-  totalInvestments: number;
-  recentSales: any[];
-  topProducts: any[];
-  salesByCategory: any[];
-  monthlyRevenue: any[];
+  totalProduits?: number;
+  totalVentes?: number;
+  totalClients?: number;
+  chiffreAffaires?: number;
+  prixMoyen?: number;
+  totalCategories?: number;
+  top5Produits?: any[];
+  dernieresVentes?: any[];
+  distributionCategories?: any[];
+  // Anciens champs pour compatibilité
+  totalSales?: number;
+  totalRevenue?: number;
+  totalProducts?: number;
+  totalEmployees?: number;
+  totalInvestments?: number;
+  recentSales?: any[];
+  topProducts?: any[];
+  salesByCategory?: any[];
+  monthlyRevenue?: any[];
 }
 
 export const dashboardApi = {
