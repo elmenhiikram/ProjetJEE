@@ -1,0 +1,21 @@
+nom,description,prix,stock,categorie,seuilAlerte,image
+Ordinateur Portable HP,Ordinateur portable HP 15 pouces Intel Core i5 8Go RAM,899.99,50,Informatique,10,https://example.com/hp-laptop.jpg
+MacBook Pro 14,MacBook Pro 14 pouces M2 16Go RAM 512Go SSD,2499.99,25,Informatique,5,https://example.com/macbook.jpg
+Souris Sans Fil Logitech,Souris ergonomique sans fil Bluetooth,29.99,150,Informatique,20,https://example.com/logitech-mouse.jpg
+Clavier Mécanique RGB,Clavier mécanique gaming RGB rétroéclairé,79.99,80,Informatique,15,https://example.com/keyboard.jpg
+Écran 27 pouces 4K,Écran 4K UHD 27 pouces HDR IPS,449.99,35,Informatique,8,https://example.com/monitor.jpg
+Casque Audio Bluetooth,Casque audio sans fil réduction de bruit active,149.99,60,Audio & Video,12,https://example.com/headphones.jpg
+Webcam HD 1080p,Webcam Full HD 1080p avec micro intégré,59.99,100,Informatique,15,https://example.com/webcam.jpg
+Disque Dur Externe 2To,Disque dur externe portable USB 3.0 2To,89.99,45,Informatique,10,https://example.com/external-hdd.jpg
+SSD NVMe 1To,SSD M.2 NVMe PCIe 3.0 1To,119.99,70,Informatique,12,https://example.com/ssd.jpg
+Tablette Android 10,Tablette Android 10 pouces 64Go WiFi,249.99,40,Tablettes,8,https://example.com/android-tablet.jpg
+iPad Air,iPad Air 10.9 pouces WiFi 256Go,649.99,30,Tablettes,5,https://example.com/ipad-air.jpg
+Smartphone Samsung,Samsung Galaxy S23 128Go 5G,799.99,55,Informatique,10,https://example.com/samsung.jpg
+iPhone 15,iPhone 15 128Go 5G,999.99,45,Informatique,8,https://example.com/iphone.jpg
+Chargeur Sans Fil,Chargeur à induction sans fil rapide 15W,24.99,200,Accessoires,25,https://example.com/wireless-charger.jpg
+Câble USB-C 2m,Câble USB-C vers USB-C 100W charge rapide 2m,14.99,300,Accessoires,40,https://example.com/usb-c-cable.jpg
+Hub USB-C 7 Ports,Hub adaptateur USB-C multiport HDMI Ethernet,49.99,85,Informatique,15,https://example.com/usb-hub.jpg
+Souris Verticale,Souris verticale ergonomique sans fil,44.99,65,Informatique,12,https://example.com/vertical-mouse.jpg
+Repose-Poignet,Repose-poignet ergonomique pour clavier,19.99,120,Accessoires,20,https://example.com/wrist-rest.jpg
+Support Laptop,Support pliable en aluminium pour ordinateur portable,34.99,90,Accessoires,15,https://example.com/laptop-stand.jpg
+Lampe Bureau LED,Lampe de bureau LED avec chargeur sans fil intégré,54.99,75,Maison & Domotique,12,https://example.com/desk-lamp.jpg

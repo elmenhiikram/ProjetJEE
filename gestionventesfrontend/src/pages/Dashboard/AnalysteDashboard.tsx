@@ -52,16 +52,17 @@ import {
   PieChart as PieChartIcon,
   Printer,
   FileDown,
-  User,
   Filter,
   ChevronDown,
   ChevronUp,
+  Upload,
 } from "lucide-react"
 import StatCard from "../../components/charts/StatCard"
 import axiosInstance from "../../api/axiosConfig"
 import jsPDF from "jspdf"
 import "jspdf-autotable"
 import html2canvas from "html2canvas"
+import CsvEtlUpload from "../../components/forms/CsvEtlUpload"
 
 // Interfaces
 interface Produit {
@@ -246,21 +247,7 @@ const AnalysteDashboard = () => {
     performanceCategories: "composed",
     topClients: "horizontalBar",
   })
-  const [analystInfo, setAnalystInfo] = useState({
-    nom: "Jean Dupont",
-    poste: "Analyste Senior",
-    email: "jean.dupont@entreprise.com",
-    dateGeneration: new Date().toLocaleDateString('fr-FR'),
-    periodeRapport: "30 derniers jours"
-  })
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [exportConfig, setExportConfig] = useState({
-    includeCharts: true,
-    includeTables: true,
-    includeKPIs: true,
-    includeAlerts: true,
-    format: "pdf" as "pdf" | "html"
-  })
 
   const dashboardRef = useRef<HTMLDivElement>(null)
 
@@ -536,13 +523,6 @@ const AnalysteDashboard = () => {
       doc.setFontSize(12)
       doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 105, 30, { align: 'center' })
       
-      // Informations de l'analyste
-      doc.setFontSize(10)
-      doc.setTextColor(100, 100, 100)
-      doc.text(`Analyste: ${analystInfo.nom}`, 20, 50)
-      doc.text(`Poste: ${analystInfo.poste}`, 20, 56)
-      doc.text(`Période: ${analystInfo.periodeRapport}`, 20, 62)
-      
       // Résumé exécutif
       doc.setFontSize(14)
       doc.setTextColor(0, 0, 0)
@@ -721,6 +701,7 @@ const AnalysteDashboard = () => {
     { id: "sales", label: "Ventes" },
     { id: "clients", label: "Clients" },
     { id: "categories", label: "Catégories" },
+    { id: "etl", label: "Import CSV / ETL" },
     { id: "reports", label: "Rapports" },
   ]
 
@@ -824,22 +805,7 @@ const AnalysteDashboard = () => {
             </div>
           )}
 
-          {/* En-tête avec informations de l'analyste */}
-          <div className="mb-6 p-4 bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl border border-slate-700">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                  <User className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-white">Tableau de Bord Analytique</h1>
-                  <p className="text-slate-400 text-sm">
-                    {analystInfo.nom} • {analystInfo.poste} • {analystInfo.dateGeneration}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
+          <div className="mb-6 flex flex-wrap gap-2">
                 <button
                   onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                   className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm flex items-center gap-2"
@@ -895,7 +861,6 @@ const AnalysteDashboard = () => {
                   {loading ? "Mise à jour..." : "Actualiser"}
                 </button>
               </div>
-            </div>
 
             {/* Filtres avancés */}
             {showAdvancedFilters && (
@@ -966,7 +931,6 @@ const AnalysteDashboard = () => {
                 </div>
               </div>
             )}
-          </div>
 
           {/* Navigation */}
           <div className="mb-6 flex flex-wrap gap-2">
@@ -2007,6 +1971,124 @@ const AnalysteDashboard = () => {
             </div>
           )}
 
+          {/* ETL / IMPORT CSV */}
+          {activeSection === "etl" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <Upload className="w-7 h-7 text-cyan-400" />
+                    Import CSV et ETL
+                  </h2>
+                  <p className="text-slate-400 mt-1">
+                    Importer des données de ventes via fichier CSV avec traitement ETL automatique
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-6">
+                <CsvEtlUpload />
+
+                <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-400" />
+                    À propos du processus ETL
+                  </h3>
+                  <div className="space-y-3 text-slate-300">
+                    <div>
+                      <h4 className="font-semibold text-white mb-1">Extract (Extraction)</h4>
+                      <p className="text-sm text-slate-400">
+                        Lecture et validation du fichier CSV uploadé avec parsing ligne par ligne.
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white mb-1">Transform (Transformation)</h4>
+                      <p className="text-sm text-slate-400">
+                        Nettoyage des données, validation des types, normalisation et détection des doublons.
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white mb-1">Load (Chargement)</h4>
+                      <p className="text-sm text-slate-400">
+                        Insertion des nouvelles données et mise à jour des existantes avec rapport détaillé.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                    <h4 className="font-semibold text-blue-300 mb-2">Format CSV attendu</h4>
+                    <code className="text-xs text-slate-300 block">
+                      nom,description,prix,stock,categorie,seuilAlerte,image
+                    </code>
+                    <p className="text-xs text-slate-400 mt-2">
+                      Consultez le fichier <span className="font-mono bg-slate-700 px-1 rounded">exemple_produits.csv</span> et 
+                      <span className="font-mono bg-slate-700 px-1 rounded">IMPORT_CSV_README.md</span> pour plus de détails.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ETL / IMPORT CSV */}
+          {activeSection === "etl" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <Upload className="w-7 h-7 text-cyan-400" />
+                    Import CSV et ETL
+                  </h2>
+                  <p className="text-slate-400 mt-1">
+                    Importer des données de ventes via fichier CSV avec traitement ETL automatique
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-6">
+                <CsvEtlUpload />
+
+                <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-400" />
+                    À propos du processus ETL
+                  </h3>
+                  <div className="space-y-3 text-slate-300">
+                    <div>
+                      <h4 className="font-semibold text-white mb-1">Extract (Extraction)</h4>
+                      <p className="text-sm text-slate-400">
+                        Lecture et validation du fichier CSV uploadé avec parsing ligne par ligne.
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white mb-1">Transform (Transformation)</h4>
+                      <p className="text-sm text-slate-400">
+                        Nettoyage des données, validation des types, normalisation et détection des doublons.
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white mb-1">Load (Chargement)</h4>
+                      <p className="text-sm text-slate-400">
+                        Insertion des nouvelles données et mise à jour des existantes avec rapport détaillé.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                    <h4 className="font-semibold text-blue-300 mb-2">Format CSV attendu</h4>
+                    <code className="text-xs text-slate-300 block">
+                      nom,description,prix,stock,categorie,seuilAlerte,image
+                    </code>
+                    <p className="text-xs text-slate-400 mt-2">
+                      Consultez le fichier <span className="font-mono bg-slate-700 px-1 rounded">exemple_produits.csv</span> et 
+                      <span className="font-mono bg-slate-700 px-1 ml-1 rounded">IMPORT_CSV_README.md</span> pour plus de détails.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* RAPPORTS */}
           {activeSection === "reports" && (
             <div className="space-y-6">
@@ -2014,80 +2096,6 @@ const AnalysteDashboard = () => {
                 <FileText className="w-6 h-6" />
                 Rapports et Exports
               </h3>
-
-              <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-6">
-                <h4 className="text-lg font-bold text-white mb-4">Configuration de l'Export</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <label className="text-slate-300">Inclure les graphiques</label>
-                      <input
-                        type="checkbox"
-                        checked={exportConfig.includeCharts}
-                        onChange={(e) => setExportConfig(prev => ({ ...prev, includeCharts: e.target.checked }))}
-                        className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <label className="text-slate-300">Inclure les tableaux</label>
-                      <input
-                        type="checkbox"
-                        checked={exportConfig.includeTables}
-                        onChange={(e) => setExportConfig(prev => ({ ...prev, includeTables: e.target.checked }))}
-                        className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <label className="text-slate-300">Inclure les KPIs</label>
-                      <input
-                        type="checkbox"
-                        checked={exportConfig.includeKPIs}
-                        onChange={(e) => setExportConfig(prev => ({ ...prev, includeKPIs: e.target.checked }))}
-                        className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <label className="text-slate-300">Inclure les alertes</label>
-                      <input
-                        type="checkbox"
-                        checked={exportConfig.includeAlerts}
-                        onChange={(e) => setExportConfig(prev => ({ ...prev, includeAlerts: e.target.checked }))}
-                        className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-slate-300 mb-2">Nom de l'analyste</label>
-                      <input
-                        type="text"
-                        value={analystInfo.nom}
-                        onChange={(e) => setAnalystInfo(prev => ({ ...prev, nom: e.target.value }))}
-                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-300 mb-2">Poste</label>
-                      <input
-                        type="text"
-                        value={analystInfo.poste}
-                        onChange={(e) => setAnalystInfo(prev => ({ ...prev, poste: e.target.value }))}
-                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-300 mb-2">Période du rapport</label>
-                      <input
-                        type="text"
-                        value={analystInfo.periodeRapport}
-                        onChange={(e) => setAnalystInfo(prev => ({ ...prev, periodeRapport: e.target.value }))}
-                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[

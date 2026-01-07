@@ -9,5 +9,6 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface CategorieRepository extends JpaRepository<Categorie, Integer> {
-    // Méthodes personnalisées si nécessaire
+    // Rechercher une catégorie par nom (insensible à la casse)
+    Categorie findByNomIgnoreCase(String nom);
 }

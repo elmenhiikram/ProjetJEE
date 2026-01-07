@@ -7,8 +7,11 @@ import com.gestionVentesBackend.Repository.CategorieRepository;
 import com.gestionVentesBackend.dto.RatingUpdateDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.*;
 
 @RestController
 @RequestMapping("/produits")
@@ -224,6 +227,193 @@ public class ProduitController {
             System.err.println("❌ Erreur lors de la mise à jour du rating: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());
+        }
+    }
+
+    // POST /api/produits/import-csv - Importer des produits depuis un fichier CSV
+    @PostMapping("/api/produits/import-csv")
+    public ResponseEntity<?> importProductsFromCsv(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> response = new HashMap<>();
+        List<Map<String, Object>> errors = new ArrayList<>();
+        
+        try {
+            System.out.println("📁 Import CSV de produits: " + file.getOriginalFilename());
+            
+            // Validation du fichier
+            if (file.isEmpty()) {
+                response.put("success", false);
+                response.put("error", "Le fichier est vide");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            if (!file.getOriginalFilename().endsWith(".csv")) {
+                response.put("success", false);
+                response.put("error", "Le fichier doit être au format CSV");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            int totalRows = 0;
+            int insertedRows = 0;
+            int updatedRows = 0;
+            int errorRows = 0;
+            
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+                String line;
+                String[] headers = null;
+                int lineNumber = 0;
+                
+                while ((line = reader.readLine()) != null) {
+                    lineNumber++;
+                    
+                    // Première ligne = en-têtes
+                    if (lineNumber == 1) {
+                        headers = line.split(",");
+                        System.out.println("📋 En-têtes détectés: " + String.join(", ", headers));
+                        
+                        // Vérifier les colonnes obligatoires
+                        List<String> headerList = Arrays.asList(headers);
+                        if (!headerList.contains("nom") || !headerList.contains("prix") || 
+                            !headerList.contains("stock") || !headerList.contains("categorie")) {
+                            response.put("success", false);
+                            response.put("error", "Le CSV doit contenir les colonnes: nom, prix, stock, categorie");
+                            return ResponseEntity.badRequest().body(response);
+                        }
+                        continue;
+                    }
+                    
+                    totalRows++;
+                    
+                    try {
+                        // Parser la ligne CSV
+                        String[] values = line.split(",", -1); // -1 pour garder les valeurs vides
+                        
+                        if (values.length < headers.length) {
+                            throw new RuntimeException("Nombre de colonnes insuffisant");
+                        }
+                        
+                        // Créer un map des valeurs
+                        Map<String, String> data = new HashMap<>();
+                        for (int i = 0; i < headers.length; i++) {
+                            data.put(headers[i].trim(), values[i].trim());
+                        }
+                        
+                        // Extraction et transformation (ETL)
+                        String nom = data.get("nom");
+                        if (nom == null || nom.isEmpty()) {
+                            throw new RuntimeException("Le nom est obligatoire");
+                        }
+                        
+                        // Nettoyage du nom (suppression des espaces multiples, trim)
+                        nom = nom.replaceAll("\\s+", " ").trim();
+                        
+                        Double prix;
+                        try {
+                            prix = Double.parseDouble(data.get("prix"));
+                            if (prix <= 0) throw new RuntimeException("Le prix doit être positif");
+                        } catch (NumberFormatException e) {
+                            throw new RuntimeException("Prix invalide: " + data.get("prix"));
+                        }
+                        
+                        Integer stock;
+                        try {
+                            stock = Integer.parseInt(data.get("stock"));
+                            if (stock < 0) throw new RuntimeException("Le stock ne peut pas être négatif");
+                        } catch (NumberFormatException e) {
+                            throw new RuntimeException("Stock invalide: " + data.get("stock"));
+                        }
+                        
+                        String categorieNom = data.get("categorie");
+                        if (categorieNom == null || categorieNom.isEmpty()) {
+                            throw new RuntimeException("La catégorie est obligatoire");
+                        }
+                        
+                        // Chercher la catégorie
+                        Categorie categorie = categorieRepository.findByNomIgnoreCase(categorieNom.trim());
+                        if (categorie == null) {
+                            throw new RuntimeException("Catégorie non trouvée: " + categorieNom);
+                        }
+                        
+                        // Champs optionnels
+                        String description = data.getOrDefault("description", "");
+                        String image = data.getOrDefault("image", "");
+                        Integer seuilAlerte = null;
+                        if (data.containsKey("seuilAlerte") && !data.get("seuilAlerte").isEmpty()) {
+                            try {
+                                seuilAlerte = Integer.parseInt(data.get("seuilAlerte"));
+                            } catch (NumberFormatException e) {
+                                // Ignorer si invalide
+                            }
+                        }
+                        
+                        // Vérifier si le produit existe déjà (par nom)
+                        List<Produit> existingProducts = produitRepository.findByNomContainingIgnoreCase(nom);
+                        Produit produit = null;
+                        boolean isUpdate = false;
+                        
+                        for (Produit p : existingProducts) {
+                            if (p.getNom().equalsIgnoreCase(nom)) {
+                                produit = p;
+                                isUpdate = true;
+                                break;
+                            }
+                        }
+                        
+                        if (produit == null) {
+                            produit = new Produit();
+                        }
+                        
+                        // Load (chargement dans la base)
+                        produit.setNom(nom);
+                        produit.setPrix(prix);
+                        produit.setQuantite(stock);
+                        produit.setCategorie(categorie);
+                        
+                        if (!description.isEmpty()) produit.setDescription(description);
+                        if (!image.isEmpty()) produit.setImage(image);
+                        
+                        produitRepository.save(produit);
+                        
+                        if (isUpdate) {
+                            updatedRows++;
+                            System.out.println("🔄 Produit mis à jour: " + nom);
+                        } else {
+                            insertedRows++;
+                            System.out.println("➕ Produit créé: " + nom);
+                        }
+                        
+                    } catch (Exception e) {
+                        errorRows++;
+                        Map<String, Object> error = new HashMap<>();
+                        error.put("row", lineNumber);
+                        error.put("error", e.getMessage());
+                        errors.add(error);
+                        System.err.println("❌ Erreur ligne " + lineNumber + ": " + e.getMessage());
+                    }
+                }
+            }
+            
+            System.out.println("✅ Import terminé - Total: " + totalRows + ", Insérés: " + insertedRows + 
+                             ", Mis à jour: " + updatedRows + ", Erreurs: " + errorRows);
+            
+            response.put("success", true);
+            response.put("message", "Import terminé avec succès");
+            response.put("totalRows", totalRows);
+            response.put("insertedRows", insertedRows);
+            response.put("updatedRows", updatedRows);
+            response.put("errorRows", errorRows);
+            
+            if (!errors.isEmpty()) {
+                response.put("errors", errors);
+            }
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            System.err.println("❌ Erreur lors de l'import CSV: " + e.getMessage());
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("error", "Erreur lors de l'import: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 }

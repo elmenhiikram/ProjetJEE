@@ -38,6 +38,9 @@ public class EtlService {
     @Value("${etl.scriptPath:../gestionventesdata/etl/etl_pipeline.py}")
     private String scriptPath;
 
+    @Value("${etl.produitsScriptPath:../gestionventesdata/etl/etl_produits.py}")
+    private String produitsScriptPath;
+
     /**
      * SQLAlchemy DB URL (ex: mysql+pymysql://user:pwd@host:3306/db ou postgresql+psycopg://...)
      */
@@ -74,6 +77,9 @@ public class EtlService {
             throw new RuntimeException("Erreur sauvegarde CSV: " + e.getMessage(), e);
         }
 
+        // Détecter le type de fichier pour choisir le bon script
+        String scriptToUse = detectScriptType(savedFile);
+
         long start = System.currentTimeMillis();
         Process process;
         String stdout;
@@ -82,7 +88,7 @@ public class EtlService {
         String status;
 
         try {
-            List<String> command = buildCommand(savedFile);
+            List<String> command = buildCommand(savedFile, scriptToUse);
             ProcessBuilder pb = new ProcessBuilder(command);
 
             if (databaseUrl != null && !databaseUrl.isBlank()) {
@@ -122,12 +128,33 @@ public class EtlService {
                 .build();
     }
 
-    private List<String> buildCommand(Path savedFile) {
+    /**
+     * Détecte le type de fichier CSV (produits ou ventes) en lisant l'en-tête
+     */
+    private String detectScriptType(Path csvFile) {
+        try {
+            List<String> lines = Files.readAllLines(csvFile, StandardCharsets.UTF_8);
+            if (!lines.isEmpty()) {
+                String header = lines.get(0).toLowerCase();
+                // Si on trouve les colonnes typiques des produits
+                if (header.contains("stock") && header.contains("prix") && 
+                    header.contains("categorie") && !header.contains("client")) {
+                    return produitsScriptPath;
+                }
+            }
+        } catch (IOException e) {
+            // En cas d'erreur, utiliser le script par défaut
+        }
+        // Par défaut, utiliser le script de ventes
+        return scriptPath;
+    }
+
+    private List<String> buildCommand(Path savedFile, String scriptToUse) {
         List<String> cmd = new ArrayList<>();
 
         // Permet de configurer pythonCommand = "py" sous Windows ou "python3" sous Linux.
         cmd.add(pythonCommand);
-        cmd.add(Paths.get(scriptPath).toAbsolutePath().normalize().toString());
+        cmd.add(Paths.get(scriptToUse).toAbsolutePath().normalize().toString());
 
         cmd.add("--input");
         cmd.add(savedFile.toAbsolutePath().normalize().toString());

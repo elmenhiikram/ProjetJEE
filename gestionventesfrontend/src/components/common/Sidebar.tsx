@@ -20,6 +20,7 @@ import {
   Activity,
   PieChart,
   FileText,
+  Upload,
 } from 'lucide-react';
 
 type SidebarProps = {
@@ -68,6 +69,7 @@ const Sidebar = ({ isOpen, onClose, activeSection, setActiveSection, cartCount =
         { path: '/analytics/ventes', label: 'Ventes', icon: TrendingUp },
         { path: '/analytics/clients', label: 'Clients', icon: Users },
         { path: '/analytics/categories', label: 'Catégories', icon: PieChart },
+        { path: '/analytics/etl', label: 'Import CSV / ETL', icon: Upload },
         { path: '/analytics/rapports', label: 'Rapports', icon: FileText },
       ];
     }
