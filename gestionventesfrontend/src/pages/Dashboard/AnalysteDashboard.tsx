@@ -60,7 +60,7 @@ import {
 import StatCard from "../../components/charts/StatCard"
 import axiosInstance from "../../api/axiosConfig"
 import jsPDF from "jspdf"
-import "jspdf-autotable"
+import autoTable from "jspdf-autotable"
 import html2canvas from "html2canvas"
 import CsvEtlUpload from "../../components/forms/CsvEtlUpload"
 
@@ -547,15 +547,15 @@ const AnalysteDashboard = () => {
       yPosition += 10
 
       const kpiTableData = [
-        ['Chiffre d\'Affaires', `${dashboardStats?.chiffreAffaires?.toLocaleString('fr-FR')} €`, `${kpiData?.growthRate?.toFixed(1)}%`],
-        ['Ventes Totales', dashboardStats?.totalVentes?.toString(), ''],
-        ['Clients', dashboardStats?.totalClients?.toString(), `${kpiData?.customerRetention?.toFixed(1)}% rétention`],
-        ['Panier Moyen', `${kpiData?.averageOrderValue?.toFixed(2)} €`, ''],
-        ['Marge Nette', `${kpiData?.profitMargin?.toFixed(1)}%`, ''],
-        ['Taux Conversion', `${kpiData?.conversionRate?.toFixed(1)}%`, ''],
+        ['Chiffre d\'Affaires', `${dashboardStats?.chiffreAffaires?.toLocaleString('fr-FR') || '0'} €`, `${kpiData?.growthRate?.toFixed(1) || '0.0'}%`],
+        ['Ventes Totales', dashboardStats?.totalVentes?.toString() || '0', ''],
+        ['Clients', dashboardStats?.totalClients?.toString() || '0', `${kpiData?.customerRetention?.toFixed(1) || '0.0'}% rétention`],
+        ['Panier Moyen', `${kpiData?.averageOrderValue?.toFixed(2) || '0.00'} €`, ''],
+        ['Marge Nette', `${kpiData?.profitMargin?.toFixed(1) || '0.0'}%`, ''],
+        ['Taux Conversion', `${kpiData?.conversionRate?.toFixed(1) || '0.0'}%`, ''],
       ]
 
-      ;(doc as any).autoTable({
+      autoTable(doc, {
         startY: yPosition,
         head: [['Indicateur', 'Valeur', 'Commentaire']],
         body: kpiTableData,
@@ -580,7 +580,7 @@ const AnalysteDashboard = () => {
           `${cat.margeMoyenne?.toFixed(1) || '0'}%`
         ])
 
-      ;(doc as any).autoTable({
+      autoTable(doc, {
         startY: yPosition,
         head: [['Catégorie', 'CA', 'Produits', 'Ventes', 'Marge Moyenne']],
         body: categoryTableData,
@@ -603,7 +603,7 @@ const AnalysteDashboard = () => {
           alerte.message.substring(0, 50) + '...'
         ])
 
-        ;(doc as any).autoTable({
+        autoTable(doc, {
           startY: yPosition,
           head: [['Type', 'Produit', 'Priorité', 'Message']],
           body: alertTableData,
