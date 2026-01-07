@@ -87,7 +87,6 @@ const App = () => {
               </div>
             }
           />
-
           <Route
             path="/signup"
             element={
