@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ShoppingCart,
   Heart,
   Star,
-  Search,
   Package,
   Calendar,
   Clock,
@@ -14,6 +13,10 @@ import {
   Minus,
   Trash2,
   TrendingUp,
+  Search,
+  Filter,
+  Sparkles,
+  X
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { productApi, type Product } from "../../api/productApi";
@@ -23,6 +26,8 @@ import { saleApi, type SaleRequest } from "../../api/saleApi";
 import { fetchCustomerPurchases, type CustomerPurchase } from "../../services/clientService";
 import { useClientDashboard } from "../../layouts/DashboardLayout";
 import RatingModal from "../../components/common/RatingModal";
+import IntelligentSearchBar from "../../components/IntelligentSearchBar";
+import { searchApi, type SearchResult, type SearchPattern } from "../../api/searchApi";
 
 interface CartItem extends Product {
   quantity: number;
@@ -39,6 +44,8 @@ interface ProfileData {
 const ClientDashboard = () => {
   const { user } = useAuth();
   const { setClientDashboardState } = useClientDashboard();
+  
+  // États existants
   const [activeSection, setActiveSection] = useState<string>("overview");
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -57,7 +64,6 @@ const ClientDashboard = () => {
   const [totalOrders, setTotalOrders] = useState(0);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [purchasedProducts, setPurchasedProducts] = useState<Array<{id: number; nom: string; image?: string}>>([]);
-
   const [profileData, setProfileData] = useState<ProfileData>({
     nom: user?.name || "Client",
     prenom: "",
@@ -65,6 +71,11 @@ const ClientDashboard = () => {
     numeroTel: "",
     address: "",
   });
+
+  // États pour la recherche intelligente
+  const [isIntelligentSearch, setIsIntelligentSearch] = useState(false);
+  const [searchPatterns, setSearchPatterns] = useState<SearchPattern[]>([]);
+  const [intelligentSearchQuery, setIntelligentSearchQuery] = useState("");
 
   // Persistance du panier
   const saveCartToLocalStorage = (cartItems: CartItem[]) => {
@@ -145,7 +156,6 @@ const ClientDashboard = () => {
         if (clientId) {
           try {
             const salesData = await fetchCustomerPurchases(clientId);
-
             setSales(salesData);
 
             const spent = salesData.reduce(
@@ -193,7 +203,7 @@ const ClientDashboard = () => {
       const timeString = now.toTimeString();
       const heureVente = timeString.split(" ")[0];
 
-      // Créer les ventes (le stock sera mis à jour automatiquement par le backend)
+      // Créer les ventes
       const ventePromises = cart.map((item) => {
         if (!item.id) return Promise.resolve();
         
@@ -226,10 +236,10 @@ const ClientDashboard = () => {
       setCart([]);
       localStorage.removeItem("user_cart");
       
-      // Recharger les données pour avoir les stocks à jour
+      // Recharger les données
       await Promise.all([fetchClientData(), fetchProducts()]);
       
-      // Afficher le modal de rating après un court délai
+      // Afficher le modal de rating
       setTimeout(() => {
         setShowRatingModal(true);
         setSuccessMessage("");
@@ -241,39 +251,43 @@ const ClientDashboard = () => {
     }
   };
 
-  // Initialisation
-  useEffect(() => {
-    const initializeDashboard = async () => {
-      setLoadingData(true);
+  // Gestion de la recherche intelligente
+  const handleIntelligentSearch = (results: SearchResult[], query: string, patterns: SearchPattern[]) => {
+    const formattedResults: Product[] = results.map(item => ({
+      id: item.id_produit,
+      nom: item.name,
+      description: item.description || "",
+      prix: item.prix,
+      quantite: item.quantite,
+      rating: item.rating || 0,
+      reviews_count: item.reviews_count || 0,
+      product_rank: item.product_rank || 0,
+      categorie: item.name_categorie ? { 
+        id: item.id_categorie || 0, 
+        nom: item.name_categorie 
+      } : undefined,
+      image: item.photo_url || undefined
+    }));
+    
+    setSearchPatterns(patterns);
+    setIntelligentSearchQuery(query);
+    setFilteredProducts(formattedResults);
+    setIsIntelligentSearch(true);
+    
+    setSuccessMessage(`🔍 Recherche intelligente: "${query}" • ${formattedResults.length} résultats trouvés`);
+    setTimeout(() => setSuccessMessage(""), 4000);
+  };
 
-      await Promise.all([fetchProducts(), fetchCategories()]);
+  // Réinitialiser la recherche intelligente
+  const resetSearch = () => {
+    setFilteredProducts(products);
+    setIsIntelligentSearch(false);
+    setSearchPatterns([]);
+    setIntelligentSearchQuery("");
+    setSearchTerm("");
+  };
 
-      const savedCart = loadCartFromLocalStorage();
-      if (savedCart.length > 0) {
-        setCart(savedCart);
-      }
-
-      if (user?.email) {
-        await fetchClientData();
-      }
-
-      setLoadingData(false);
-    };
-
-    initializeDashboard();
-  }, [user?.email]);
-
-  // Synchroniser l'état avec le layout pour la sidebar
-  useEffect(() => {
-    const productsInCart = cart.reduce((sum, item) => sum + item.quantity, 0);
-    setClientDashboardState({
-      activeSection,
-      setActiveSection,
-      cartCount: productsInCart,
-    });
-  }, [activeSection, cart, setClientDashboardState]);
-
-  // Fonctions de filtrage
+  // Fonctions de filtrage standard
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     filterProducts(value, selectedCategory);
@@ -299,9 +313,7 @@ const ClientDashboard = () => {
       );
     }
 
-    // Trier par rating décroissant
     filtered = filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-
     setFilteredProducts(filtered);
   };
 
@@ -318,7 +330,6 @@ const ClientDashboard = () => {
     const currentQuantityInCart = existingItem ? existingItem.quantity : 0;
     const availableStock = product.quantite || 0;
     
-    // Vérifier si le stock est suffisant
     if (currentQuantityInCart >= availableStock) {
       setErrorMessage(`Stock insuffisant pour ${product.nom}. Stock disponible: ${availableStock}`);
       setTimeout(() => setErrorMessage(""), 3000);
@@ -348,11 +359,9 @@ const ClientDashboard = () => {
   };
 
   const updateQuantity = (productId: number, quantity: number) => {
-    // Trouver le produit pour vérifier le stock
     const product = products.find(p => p.id === productId);
     const availableStock = product?.quantite || 0;
     
-    // Vérifier si la quantité demandée ne dépasse pas le stock
     if (quantity > availableStock) {
       setErrorMessage(`Stock insuffisant. Stock disponible: ${availableStock}`);
       setTimeout(() => setErrorMessage(""), 3000);
@@ -376,6 +385,38 @@ const ClientDashboard = () => {
     )}`;
     e.currentTarget.onerror = null;
   };
+
+  // Initialisation
+  useEffect(() => {
+    const initializeDashboard = async () => {
+      setLoadingData(true);
+
+      await Promise.all([fetchProducts(), fetchCategories()]);
+
+      const savedCart = loadCartFromLocalStorage();
+      if (savedCart.length > 0) {
+        setCart(savedCart);
+      }
+
+      if (user?.email) {
+        await fetchClientData();
+      }
+
+      setLoadingData(false);
+    };
+
+    initializeDashboard();
+  }, [user?.email]);
+
+  // Synchroniser l'état avec le layout
+  useEffect(() => {
+    const productsInCart = cart.reduce((sum, item) => sum + item.quantity, 0);
+    setClientDashboardState({
+      activeSection,
+      setActiveSection,
+      cartCount: productsInCart,
+    });
+  }, [activeSection, cart, setClientDashboardState]);
 
   // Calculs
   const cartTotal = cart.reduce((sum, item) => sum + (item.prix || 0) * item.quantity, 0);
@@ -565,35 +606,102 @@ const ClientDashboard = () => {
         </div>
       )}
 
-      {/* BOUTIQUE */}
+      {/* BOUTIQUE AVEC RECHERCHE INTELLIGENTE */}
       {activeSection === "products" && (
         <div className="space-y-6">
-          <h2 className="text-3xl font-black mb-2 text-white">Boutique</h2>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Rechercher produits..."
-                value={searchTerm || ""}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-slate-800/60 backdrop-blur-xl rounded-xl border border-slate-700/50 focus:border-blue-500/50 text-white placeholder-slate-500 focus:outline-none"
-              />
-            </div>
-            <select
-              value={selectedCategory}
-              onChange={(e) => handleCategoryFilter(e.target.value)}
-              className="px-4 py-3 bg-slate-800/60 backdrop-blur-xl rounded-xl border border-slate-700/50 focus:border-blue-500/50 text-white focus:outline-none"
-            >
-              <option value="all">Toutes catégories</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.nom}
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-black mb-2 text-white">Boutique</h2>
+            {isIntelligentSearch && (
+              <button
+                onClick={resetSearch}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700 rounded-xl text-white transition-colors text-sm"
+              >
+                <X className="w-4 h-4" />
+                Réinitialiser la recherche
+              </button>
+            )}
           </div>
 
+          {/* Barre de recherche intelligente */}
+          <IntelligentSearchBar
+            onSearch={handleIntelligentSearch}
+            userId={clientData?.id}
+            placeholder="Recherche intelligente: ASIN_123, nom produit ou 'produits sous 50$'..."
+            className="mb-6"
+          />
+
+          {/* Patterns détectés */}
+          {searchPatterns.length > 0 && (
+            <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+              <Sparkles className="w-5 h-5 text-blue-400 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-300 mb-1">Patterns détectés:</p>
+                <div className="flex flex-wrap gap-2">
+                  {searchPatterns.map((pattern, idx) => (
+                    <span 
+                      key={idx} 
+                      className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full border border-blue-500/30 text-sm"
+                    >
+                      {pattern.match}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Filtres standard */}
+          {!isIntelligentSearch && (
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Rechercher produits..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-800/60 backdrop-blur-xl rounded-xl border border-slate-700/50 focus:border-blue-500/50 text-white placeholder-slate-500 focus:outline-none"
+                />
+              </div>
+              <select
+                value={selectedCategory}
+                onChange={(e) => handleCategoryFilter(e.target.value)}
+                className="px-4 py-3 bg-slate-800/60 backdrop-blur-xl rounded-xl border border-slate-700/50 focus:border-blue-500/50 text-white focus:outline-none"
+              >
+                <option value="all">Toutes catégories</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.nom}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Info recherche intelligente */}
+          {isIntelligentSearch && (
+            <div className="p-4 bg-gradient-to-r from-blue-900/20 to-cyan-900/20 border border-slate-700/50 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-300 font-medium">
+                    Recherche intelligente: "{intelligentSearchQuery}"
+                  </p>
+                  <p className="text-sm text-slate-400">
+                    {filteredProducts.length} résultats • {searchPatterns.length} patterns détectés
+                  </p>
+                </div>
+                <button
+                  onClick={() => setActiveSection("cart")}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl text-white font-medium hover:shadow-lg hover:shadow-blue-500/50 transition-all"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Panier ({productsInCart})
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Liste des produits */}
           {loadingProducts ? (
             <div className="flex justify-center items-center py-20">
               <Loader className="w-8 h-8 text-blue-400 animate-spin" />
@@ -601,94 +709,130 @@ const ClientDashboard = () => {
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-16 bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50">
               <ShoppingCart className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-              <p className="text-slate-400 text-lg font-medium">Aucun produit trouvé</p>
+              <p className="text-slate-400 text-lg font-medium">
+                {isIntelligentSearch ? "Aucun résultat pour votre recherche" : "Aucun produit trouvé"}
+              </p>
+              {isIntelligentSearch && (
+                <button
+                  onClick={resetSearch}
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl text-white font-semibold mt-4"
+                >
+                  Voir tous les produits
+                </button>
+              )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {filteredProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="group relative"
-                >
-                  <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-2xl overflow-hidden border border-slate-700/50 group-hover:border-blue-500/50 transition-all duration-300 shadow-lg">
-                    <div className="relative h-44 md:h-52 bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
-                      <img
-                        src={
-                          product.image ||
-                          `https://placehold.co/300x200/1e293b/ffffff?text=${encodeURIComponent(product.nom.substring(0, 10))}`
-                        }
-                        alt={product.nom}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        onError={(e) => handleImageError(e, product.nom)}
-                      />
-                      <button
-                        onClick={() => product.id && toggleWishlist(product.id)}
-                        className="absolute top-3 right-3 p-2 bg-slate-900/80 backdrop-blur-sm rounded-xl hover:bg-red-500/20 transition-all"
-                      >
-                        <Heart
-                          className={`w-4 h-4 ${
-                            product.id && wishlist.includes(product.id)
-                              ? "fill-red-500 text-red-500"
-                              : "text-white"
-                          }`}
-                        />
-                      </button>
-                      {(product.quantite || 0) > 0 && (
-                        <div className="absolute top-3 left-3 px-2 py-1 bg-emerald-500/20 backdrop-blur-sm rounded-lg">
-                          <span className="text-xs font-bold text-emerald-300">{product.quantite} en stock</span>
-                        </div>
-                      )}
-                      {(product.quantite || 0) === 0 && (
-                        <div className="absolute top-3 left-3 px-2 py-1 bg-red-500/20 backdrop-blur-sm rounded-lg">
-                          <span className="text-xs font-bold text-red-300">Rupture</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-4 space-y-2">
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-3 h-3 ${
-                              i < Math.round(product.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-slate-600"
-                            }`}
-                          />
-                        ))}
-                        <span className="text-xs text-slate-400 ml-1">
-                          ({(product.rating || 0).toFixed(1)})
-                        </span>
-                      </div>
-
-                      <h3 className="text-sm font-semibold text-white line-clamp-1">{product.nom}</h3>
-
-                      <p className="text-xs text-slate-500 line-clamp-1">{product.description}</p>
-
-                      <div className="flex items-center justify-between pt-1">
-                        <span className="text-lg font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                          {product.prix} DHS
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {product.categorie?.nom || "N/A"}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={() => addToCart(product)}
-                        disabled={(product.quantite || 0) === 0}
-                        className={`w-full py-2 rounded-xl font-semibold text-xs transition-all ${
-                          (product.quantite || 0) === 0
-                            ? "bg-slate-700 text-slate-500 cursor-not-allowed"
-                            : "bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-lg hover:shadow-blue-500/50"
-                        }`}
-                      >
-                        {(product.quantite || 0) === 0 ? "Rupture de stock" : "Ajouter au panier"}
-                      </button>
-                    </div>
+            <>
+              {/* Statistiques de recherche */}
+              {isIntelligentSearch && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/30">
+                    <p className="text-sm text-slate-400">Produits trouvés</p>
+                    <p className="text-2xl font-bold text-white">{filteredProducts.length}</p>
+                  </div>
+                  <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/30">
+                    <p className="text-sm text-slate-400">Prix moyen</p>
+                    <p className="text-2xl font-bold text-white">
+                      {(
+                        filteredProducts.reduce((sum, p) => sum + (p.prix || 0), 0) / filteredProducts.length
+                      ).toFixed(2)} dhs
+                    </p>
+                  </div>
+                  <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/30">
+                    <p className="text-sm text-slate-400">Note moyenne</p>
+                    <p className="text-2xl font-bold text-white">
+                      {(
+                        filteredProducts.reduce((sum, p) => sum + (p.rating || 0), 0) / filteredProducts.length
+                      ).toFixed(1)}/5
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
+              )}
+
+              {/* Grille de produits */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {filteredProducts.map((product) => (
+                  <div key={product.id} className="group relative">
+                    <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-2xl overflow-hidden border border-slate-700/50 group-hover:border-blue-500/50 transition-all duration-300 shadow-lg">
+                      <div className="relative h-44 md:h-52 bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
+                        <img
+                          src={
+                            product.image ||
+                            `https://placehold.co/300x200/1e293b/ffffff?text=${encodeURIComponent(product.nom.substring(0, 10))}`
+                          }
+                          alt={product.nom}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          onError={(e) => handleImageError(e, product.nom)}
+                        />
+                        <button
+                          onClick={() => product.id && toggleWishlist(product.id)}
+                          className="absolute top-3 right-3 p-2 bg-slate-900/80 backdrop-blur-sm rounded-xl hover:bg-red-500/20 transition-all"
+                        >
+                          <Heart
+                            className={`w-4 h-4 ${
+                              product.id && wishlist.includes(product.id)
+                                ? "fill-red-500 text-red-500"
+                                : "text-white"
+                            }`}
+                          />
+                        </button>
+                        {(product.quantite || 0) > 0 && (
+                          <div className="absolute top-3 left-3 px-2 py-1 bg-emerald-500/20 backdrop-blur-sm rounded-lg">
+                            <span className="text-xs font-bold text-emerald-300">{product.quantite} en stock</span>
+                          </div>
+                        )}
+                        {(product.quantite || 0) === 0 && (
+                          <div className="absolute top-3 left-3 px-2 py-1 bg-red-500/20 backdrop-blur-sm rounded-lg">
+                            <span className="text-xs font-bold text-red-300">Rupture</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4 space-y-2">
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3 h-3 ${
+                                i < Math.round(product.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-slate-600"
+                              }`}
+                            />
+                          ))}
+                          <span className="text-xs text-slate-400 ml-1">
+                            ({(product.rating || 0).toFixed(1)})
+                          </span>
+                        </div>
+
+                        <h3 className="text-sm font-semibold text-white line-clamp-1">{product.nom}</h3>
+
+                        <p className="text-xs text-slate-500 line-clamp-1">{product.description}</p>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-lg font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                            {product.prix} DHS
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            {product.categorie?.nom || "N/A"}
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => addToCart(product)}
+                          disabled={(product.quantite || 0) === 0}
+                          className={`w-full py-2 rounded-xl font-semibold text-xs transition-all ${
+                            (product.quantite || 0) === 0
+                              ? "bg-slate-700 text-slate-500 cursor-not-allowed"
+                              : "bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-lg hover:shadow-blue-500/50"
+                          }`}
+                        >
+                          {(product.quantite || 0) === 0 ? "Rupture de stock" : "Ajouter au panier"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}
