@@ -57,6 +57,7 @@ import {
   ChevronUp,
   Upload,
 } from "lucide-react"
+import { useLocation } from "react-router-dom"
 import StatCard from "../../components/charts/StatCard"
 import axiosInstance from "../../api/axiosConfig"
 import jsPDF from "jspdf"
@@ -187,11 +188,11 @@ const CHART_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#0
 // Composant pour le contenu personnalisé du Treemap
 const CustomTreemapContent = (props: any) => {
   const { x, y, width, height, name, colors, index } = props
-  
+
   if (!name) return null
-  
+
   const shortName = name.length > 20 ? name.substring(0, 18) + "..." : name
-  
+
   return (
     <g>
       <rect
@@ -229,7 +230,23 @@ const CustomTreemapContent = (props: any) => {
 }
 
 const AnalysteDashboard = () => {
-  const [activeSection, setActiveSection] = useState("overview")
+  const location = useLocation()
+
+  const getActiveSection = () => {
+    const path = location.pathname
+    if (path === "/dashboard/analyste") return "overview"
+    if (path === "/analytics") return "analytics"
+    if (path === "/analytics/produits") return "products"
+    if (path === "/analytics/ventes") return "sales"
+    if (path === "/analytics/clients") return "clients"
+    if (path === "/analytics/categories") return "categories"
+    if (path === "/analytics/etl") return "etl"
+    if (path === "/analytics/rapports") return "reports"
+    return "overview"
+  }
+
+  const activeSection = getActiveSection()
+
   const [loading, setLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
@@ -301,15 +318,15 @@ const AnalysteDashboard = () => {
       setDashboardStats(globalData.statsBasiques)
       setKpiData(globalData.kpis)
       setMonthlyStats(globalData.evolutionCA)
-      setCategoriesData(globalData.statsBasiques?.distributionCategories?.length > 0 
-        ? globalData.statsBasiques.distributionCategories 
+      setCategoriesData(globalData.statsBasiques?.distributionCategories?.length > 0
+        ? globalData.statsBasiques.distributionCategories
         : demoCategoriesData)
       setStockStats(globalData.statsStock)
       setAlertes(globalData.alertes)
       setTrends(globalData.tendances)
       setPerformance(globalData.performances?.metrics || [])
       setBestClients(globalData.topClients || [])
-      
+
       // Créer une map de tous les produits avec leurs infos complètes (stock, prix, catégorie)
       const allProductsMap = new Map<string, any>(
         (allProducts || []).map((p: any) => [p.nom, {
@@ -319,13 +336,13 @@ const AnalysteDashboard = () => {
           categorie: p.categorie?.nom || p.categorie || "Non catégorisé"
         }])
       )
-      
+
       // Enrichir topProduits avec les données complètes depuis la liste des produits
       const enrichedTopProduits = (globalData.topProduits || []).map((p: Produit) => {
         const fullData = allProductsMap.get(p.nom)
         if (fullData) {
-          return { 
-            ...p, 
+          return {
+            ...p,
             stock: fullData.stock,
             prix: fullData.prix,
             categorie: fullData.categorie,
@@ -355,10 +372,10 @@ const AnalysteDashboard = () => {
     } catch (error) {
       console.error("Erreur chargement données:", error)
       setErrorMessage("Impossible de charger les données. Utilisation des données de démonstration.")
-      
+
       // Charger les données de démonstration
       setCategoriesData(demoCategoriesData)
-      
+
       // Données de démonstration
       setDashboardStats({
         totalProduits: 1200,
@@ -372,7 +389,7 @@ const AnalysteDashboard = () => {
         distributionCategories: demoCategoriesData,
         croissanceMensuelle: 15.3,
       })
-      
+
       setKpiData({
         conversionRate: 3.2,
         averageOrderValue: 89.99,
@@ -519,25 +536,25 @@ const AnalysteDashboard = () => {
       doc.setTextColor(255, 255, 255)
       doc.setFontSize(24)
       doc.text("RAPPORT D'ANALYSE", 105, 20, { align: 'center' })
-      
+
       doc.setFontSize(12)
       doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 105, 30, { align: 'center' })
-      
+
       // Résumé exécutif
       doc.setFontSize(14)
       doc.setTextColor(0, 0, 0)
       doc.text("RÉSUMÉ EXÉCUTIF", 20, 80)
       doc.setFontSize(10)
       doc.setTextColor(80, 80, 80)
-      
+
       const summary = `
         Ce rapport présente une analyse complète des performances commerciales pour la période spécifiée.
         Le chiffre d'affaires total s'élève à ${dashboardStats?.chiffreAffaires?.toLocaleString('fr-FR')} € avec une croissance de ${kpiData?.growthRate?.toFixed(1)}% par rapport à la période précédente.
         ${dashboardStats?.produitsFaibleStock || 0} produits nécessitent une attention immédiate en raison de stocks faibles.
       `
-      
+
       doc.text(doc.splitTextToSize(summary, 170), 20, 90)
-      
+
       let yPosition = 120
 
       // KPI Principaux
@@ -694,26 +711,21 @@ const AnalysteDashboard = () => {
     return () => clearInterval(interval)
   }, [])
 
-  const menuItems = [
-    { id: "overview", label: "Vue d'ensemble" },
-    { id: "analytics", label: "Analytics" },
-    { id: "products", label: "Produits" },
-    { id: "sales", label: "Ventes" },
-    { id: "clients", label: "Clients" },
-    { id: "categories", label: "Catégories" },
-    { id: "etl", label: "Import CSV / ETL" },
-    { id: "reports", label: "Rapports" },
-  ]
+  useEffect(() => {
+    loadAllData()
+    const interval = setInterval(loadAllData, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const radarData = kpiData
     ? [
-        { subject: "Conversion", A: kpiData.conversionRate * 10, fullMark: 100 },
-        { subject: "Panier Moy.", A: (kpiData.averageOrderValue / 100) * 100, fullMark: 100 },
-        { subject: "Rétention", A: kpiData.customerRetention, fullMark: 100 },
-        { subject: "NPS", A: kpiData.npsScore * 10, fullMark: 100 },
-        { subject: "Croissance", A: kpiData.growthRate * 3, fullMark: 100 },
-        { subject: "Marge", A: kpiData.profitMargin * 2, fullMark: 100 },
-      ]
+      { subject: "Conversion", A: kpiData.conversionRate * 10, fullMark: 100 },
+      { subject: "Panier Moy.", A: (kpiData.averageOrderValue / 100) * 100, fullMark: 100 },
+      { subject: "Rétention", A: kpiData.customerRetention, fullMark: 100 },
+      { subject: "NPS", A: kpiData.npsScore * 10, fullMark: 100 },
+      { subject: "Croissance", A: kpiData.growthRate * 3, fullMark: 100 },
+      { subject: "Marge", A: kpiData.profitMargin * 2, fullMark: 100 },
+    ]
     : []
 
   const pieData = categoriesData
@@ -750,12 +762,12 @@ const AnalysteDashboard = () => {
     .sort((a, b) => b.CA - a.CA)
     .slice(0, 10)
 
-  const ChartViewSelector = ({ 
-    chartType, 
-    onTypeChange, 
-    options 
-  }: { 
-    chartType: string, 
+  const ChartViewSelector = ({
+    chartType,
+    onTypeChange,
+    options
+  }: {
+    chartType: string,
     onTypeChange: (type: any) => void,
     options: Array<{ value: string, label: string, icon: React.ReactNode }>
   }) => (
@@ -764,11 +776,10 @@ const AnalysteDashboard = () => {
         <button
           key={option.value}
           onClick={() => onTypeChange(option.value)}
-          className={`px-3 py-1.5 rounded-md flex items-center gap-2 text-sm transition-all ${
-            chartType === option.value 
-              ? "bg-blue-600 text-white shadow-md" 
+          className={`px-3 py-1.5 rounded-md flex items-center gap-2 text-sm transition-all ${chartType === option.value
+              ? "bg-blue-600 text-white shadow-md"
               : "text-slate-300 hover:bg-slate-600/50"
-          }`}
+            }`}
           title={option.label}
         >
           {option.icon}
@@ -806,148 +817,133 @@ const AnalysteDashboard = () => {
           )}
 
           <div className="mb-6 flex flex-wrap gap-2">
-                <button
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm flex items-center gap-2"
-                >
-                  <Filter className="w-4 h-4" />
-                  Filtres Avancés
-                  {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </button>
-                
-                <div className="relative group">
-                  <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm flex items-center gap-2">
-                    <FileDown className="w-4 h-4" />
-                    Exporter
-                  </button>
-                  <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    <button
-                      onClick={exportToPDF}
-                      className="w-full px-4 py-3 text-left hover:bg-slate-700 rounded-t-lg flex items-center gap-2"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Rapport PDF Complet
-                    </button>
-                    <button
-                      onClick={() => exportData("csv")}
-                      className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      Données CSV
-                    </button>
-                    <button
-                      onClick={() => exportData("json")}
-                      className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      Données JSON
-                    </button>
-                    <button
-                      onClick={exportToImage}
-                      className="w-full px-4 py-3 text-left hover:bg-slate-700 rounded-b-lg flex items-center gap-2"
-                    >
-                      <Printer className="w-4 h-4" />
-                      Capture d'écran
-                    </button>
-                  </div>
-                </div>
-                
-                <button
-                  onClick={loadAllData}
-                  disabled={loading}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                  {loading ? "Mise à jour..." : "Actualiser"}
-                </button>
-              </div>
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm flex items-center gap-2"
+            >
+              <Filter className="w-4 h-4" />
+              Filtres Avancés
+              {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
 
-            {/* Filtres avancés */}
-            {showAdvancedFilters && (
-              <div className="mt-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm text-slate-400 mb-2">Période</label>
-                    <select
-                      value={timeRange}
-                      onChange={(e) => {
-                        setTimeRange(e.target.value)
-                        if (e.target.value !== "custom") {
-                          setTimeout(() => applyTimeFilter(), 100)
-                        }
-                      }}
-                      className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700"
-                    >
-                      <option value="today">Aujourd'hui</option>
-                      <option value="last7days">7 derniers jours</option>
-                      <option value="last30days">30 derniers jours</option>
-                      <option value="last90days">90 derniers jours</option>
-                      <option value="custom">Période personnalisée</option>
-                    </select>
-                  </div>
-
-                  {timeRange === "custom" && (
-                    <>
-                      <div>
-                        <label className="block text-sm text-slate-400 mb-2">Date début</label>
-                        <input
-                          type="date"
-                          value={dateRange.start}
-                          onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                          className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-slate-400 mb-2">Date fin</label>
-                        <input
-                          type="date"
-                          value={dateRange.end}
-                          onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                          className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700"
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  {timeRange === "custom" && (
-                    <button
-                      onClick={applyTimeFilter}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                      Appliquer Filtre
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      setTimeRange("last30days")
-                      setTimeout(() => loadAllData(), 100)
-                    }}
-                    className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
-                  >
-                    Réinitialiser
-                  </button>
-                </div>
-              </div>
-            )}
-
-          {/* Navigation */}
-          <div className="mb-6 flex flex-wrap gap-2">
-            {menuItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id)}
-                className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-                  activeSection === item.id 
-                    ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg" 
-                    : "bg-slate-800 text-gray-400 hover:bg-slate-700 hover:text-white"
-                }`}
-              >
-                {item.label}
+            <div className="relative group">
+              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm flex items-center gap-2">
+                <FileDown className="w-4 h-4" />
+                Exporter
               </button>
-            ))}
+              <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <button
+                  onClick={exportToPDF}
+                  className="w-full px-4 py-3 text-left hover:bg-slate-700 rounded-t-lg flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Rapport PDF Complet
+                </button>
+                <button
+                  onClick={() => exportData("csv")}
+                  className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Données CSV
+                </button>
+                <button
+                  onClick={() => exportData("json")}
+                  className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Données JSON
+                </button>
+                <button
+                  onClick={exportToImage}
+                  className="w-full px-4 py-3 text-left hover:bg-slate-700 rounded-b-lg flex items-center gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  Capture d'écran
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={loadAllData}
+              disabled={loading}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? "Mise à jour..." : "Actualiser"}
+            </button>
           </div>
+
+          {/* Filtres avancés */}
+          {showAdvancedFilters && (
+            <div className="mt-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm text-slate-400 mb-2">Période</label>
+                  <select
+                    value={timeRange}
+                    onChange={(e) => {
+                      setTimeRange(e.target.value)
+                      if (e.target.value !== "custom") {
+                        setTimeout(() => applyTimeFilter(), 100)
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700"
+                  >
+                    <option value="today">Aujourd'hui</option>
+                    <option value="last7days">7 derniers jours</option>
+                    <option value="last30days">30 derniers jours</option>
+                    <option value="last90days">90 derniers jours</option>
+                    <option value="custom">Période personnalisée</option>
+                  </select>
+                </div>
+
+                {timeRange === "custom" && (
+                  <>
+                    <div>
+                      <label className="block text-sm text-slate-400 mb-2">Date début</label>
+                      <input
+                        type="date"
+                        value={dateRange.start}
+                        onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-slate-400 mb-2">Date fin</label>
+                      <input
+                        type="date"
+                        value={dateRange.end}
+                        onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-800 text-white rounded-lg border border-slate-700"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                {timeRange === "custom" && (
+                  <button
+                    onClick={applyTimeFilter}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Appliquer Filtre
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setTimeRange("last30days")
+                    setTimeout(() => loadAllData(), 100)
+                  }}
+                  className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
+                >
+                  Réinitialiser
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation supprimée (horizontal menu) - géré par sidebar */}
 
           {/* VUE D'ENSEMBLE */}
           {activeSection === "overview" && (
@@ -1204,24 +1200,22 @@ const AnalysteDashboard = () => {
                   {alertes.slice(0, 6).map((alerte, i) => (
                     <div
                       key={i}
-                      className={`p-4 rounded-lg border transform transition-transform hover:scale-[1.02] ${
-                        alerte.priorite === "HAUTE"
+                      className={`p-4 rounded-lg border transform transition-transform hover:scale-[1.02] ${alerte.priorite === "HAUTE"
                           ? "border-red-500/30 bg-red-500/10"
                           : alerte.priorite === "MOYENNE"
                             ? "border-amber-500/30 bg-amber-500/10"
                             : "border-blue-500/30 bg-blue-500/10"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold uppercase text-slate-400">{alerte.type}</span>
                         <span
-                          className={`text-xs px-2 py-1 rounded font-semibold ${
-                            alerte.priorite === "HAUTE"
+                          className={`text-xs px-2 py-1 rounded font-semibold ${alerte.priorite === "HAUTE"
                               ? "bg-red-500/20 text-red-300"
                               : alerte.priorite === "MOYENNE"
                                 ? "bg-amber-500/20 text-amber-300"
                                 : "bg-blue-500/20 text-blue-300"
-                          }`}
+                            }`}
                         >
                           {alerte.priorite}
                         </span>
@@ -1390,153 +1384,151 @@ const AnalysteDashboard = () => {
                 </ResponsiveContainer>
               </div>
 
-{/* Table des produits avec pagination */}
-<div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-  <div className="p-6 border-b border-slate-700 flex justify-between items-center">
-    <h4 className="text-xl font-bold text-white">Liste des Produits</h4>
-    <div className="text-sm text-slate-400">
-      Affichage {((currentProductPage - 1) * productsPerPage) + 1} - {Math.min(currentProductPage * productsPerPage, topProducts.length)} sur {topProducts.length} produits
-    </div>
-  </div>
-  <div className="overflow-x-auto">
-    <table className="w-full">
-      <thead>
-        <tr className="border-b border-slate-700">
-          <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">Produit</th>
-          <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">Catégorie</th>
-          <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">Prix</th>
-          <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">Stock</th>
-          <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">Ventes</th>
-          <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">CA</th>
-        </tr>
-      </thead>
-      <tbody>
-        {topProducts
-          .slice((currentProductPage - 1) * productsPerPage, currentProductPage * productsPerPage)
-          .map((product, i) => (
-          <tr key={i} className="border-b border-slate-700 hover:bg-slate-700/40 transition-colors">
-            <td className="px-6 py-4">
-              <div className="flex items-center gap-3">
-                {/* Image du produit ou fallback */}
-                <div 
-                  className="w-10 h-10 rounded-md flex items-center justify-center border border-slate-600"
-                  style={{ backgroundColor: `hsl(${((currentProductPage - 1) * productsPerPage + i) * 30 % 360}, 70%, 20%)` }}
-                >
-                  <span className="text-xs font-bold text-white">
-                    {product.nom?.charAt(0) || 'P'}
-                  </span>
+              {/* Table des produits avec pagination */}
+              <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+                  <h4 className="text-xl font-bold text-white">Liste des Produits</h4>
+                  <div className="text-sm text-slate-400">
+                    Affichage {((currentProductPage - 1) * productsPerPage) + 1} - {Math.min(currentProductPage * productsPerPage, topProducts.length)} sur {topProducts.length} produits
+                  </div>
                 </div>
-                
-                <div>
-                  <div className="font-medium text-white">{product.nom}</div>
-                  <div className="text-xs text-slate-400 truncate max-w-[200px]">
-                    {product.nom?.length > 30 ? `${product.nom?.substring(0, 30)}...` : product.nom}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-700">
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">Produit</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">Catégorie</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">Prix</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">Stock</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">Ventes</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-400">CA</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topProducts
+                        .slice((currentProductPage - 1) * productsPerPage, currentProductPage * productsPerPage)
+                        .map((product, i) => (
+                          <tr key={i} className="border-b border-slate-700 hover:bg-slate-700/40 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                {/* Image du produit ou fallback */}
+                                <div
+                                  className="w-10 h-10 rounded-md flex items-center justify-center border border-slate-600"
+                                  style={{ backgroundColor: `hsl(${((currentProductPage - 1) * productsPerPage + i) * 30 % 360}, 70%, 20%)` }}
+                                >
+                                  <span className="text-xs font-bold text-white">
+                                    {product.nom?.charAt(0) || 'P'}
+                                  </span>
+                                </div>
+
+                                <div>
+                                  <div className="font-medium text-white">{product.nom}</div>
+                                  <div className="text-xs text-slate-400 truncate max-w-[200px]">
+                                    {product.nom?.length > 30 ? `${product.nom?.substring(0, 30)}...` : product.nom}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-slate-300">
+                              {typeof product.categorie === 'object' ? product.categorie?.nom : product.categorie || "Non catégorisé"}
+                            </td>
+                            <td className="px-6 py-4 text-blue-400">
+                              {product.prix ? product.prix.toFixed(2) :
+                                ((product.quantiteVendue || 0) > 0
+                                  ? ((product.chiffreAffaires || 0) / (product.quantiteVendue || 1)).toFixed(2)
+                                  : "0.00")} €
+                            </td>
+                            <td className="px-6 py-4">
+                              <span
+                                className={`px-2 py-1 rounded text-xs font-bold ${(product.stock || 0) > 20
+                                    ? "bg-emerald-500/20 text-emerald-300"
+                                    : (product.stock || 0) > 5
+                                      ? "bg-amber-500/20 text-amber-300"
+                                      : "bg-red-500/20 text-red-300"
+                                  }`}
+                              >
+                                {product.stock || 0}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-slate-300">
+                              {product.quantiteVendue || 0}
+                            </td>
+                            <td className="px-6 py-4 text-emerald-400 font-medium">
+                              {product.chiffreAffaires?.toLocaleString('fr-FR') || "0"} €
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="p-4 border-t border-slate-700 flex items-center justify-between">
+                  <div className="text-sm text-slate-400">
+                    Page {currentProductPage} sur {Math.ceil(topProducts.length / productsPerPage)}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentProductPage(1)}
+                      disabled={currentProductPage === 1}
+                      className="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      «
+                    </button>
+                    <button
+                      onClick={() => setCurrentProductPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentProductPage === 1}
+                      className="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      Précédent
+                    </button>
+
+                    {/* Numéros de pages */}
+                    <div className="flex gap-1">
+                      {Array.from({ length: Math.ceil(topProducts.length / productsPerPage) }, (_, i) => i + 1)
+                        .filter(page => {
+                          const totalPages = Math.ceil(topProducts.length / productsPerPage)
+                          if (totalPages <= 5) return true
+                          if (page === 1 || page === totalPages) return true
+                          if (Math.abs(page - currentProductPage) <= 1) return true
+                          return false
+                        })
+                        .map((page, idx, arr) => (
+                          <span key={page} className="flex items-center">
+                            {idx > 0 && arr[idx - 1] !== page - 1 && (
+                              <span className="px-2 text-slate-500">...</span>
+                            )}
+                            <button
+                              onClick={() => setCurrentProductPage(page)}
+                              className={`px-3 py-2 rounded-lg text-sm ${currentProductPage === page
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                }`}
+                            >
+                              {page}
+                            </button>
+                          </span>
+                        ))
+                      }
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentProductPage(prev => Math.min(prev + 1, Math.ceil(topProducts.length / productsPerPage)))}
+                      disabled={currentProductPage === Math.ceil(topProducts.length / productsPerPage)}
+                      className="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      Suivant
+                    </button>
+                    <button
+                      onClick={() => setCurrentProductPage(Math.ceil(topProducts.length / productsPerPage))}
+                      disabled={currentProductPage === Math.ceil(topProducts.length / productsPerPage)}
+                      className="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      »
+                    </button>
                   </div>
                 </div>
               </div>
-            </td>
-            <td className="px-6 py-4 text-slate-300">
-              {typeof product.categorie === 'object' ? product.categorie?.nom : product.categorie || "Non catégorisé"}
-            </td>
-            <td className="px-6 py-4 text-blue-400">
-              {product.prix ? product.prix.toFixed(2) : 
-               ((product.quantiteVendue || 0) > 0 
-                ? ((product.chiffreAffaires || 0) / (product.quantiteVendue || 1)).toFixed(2) 
-                : "0.00")} €
-            </td>
-            <td className="px-6 py-4">
-              <span
-                className={`px-2 py-1 rounded text-xs font-bold ${
-                  (product.stock || 0) > 20
-                    ? "bg-emerald-500/20 text-emerald-300"
-                    : (product.stock || 0) > 5
-                      ? "bg-amber-500/20 text-amber-300"
-                      : "bg-red-500/20 text-red-300"
-                }`}
-              >
-                {product.stock || 0}
-              </span>
-            </td>
-            <td className="px-6 py-4 text-slate-300">
-              {product.quantiteVendue || 0}
-            </td>
-            <td className="px-6 py-4 text-emerald-400 font-medium">
-              {product.chiffreAffaires?.toLocaleString('fr-FR') || "0"} €
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-  
-  {/* Pagination */}
-  <div className="p-4 border-t border-slate-700 flex items-center justify-between">
-    <div className="text-sm text-slate-400">
-      Page {currentProductPage} sur {Math.ceil(topProducts.length / productsPerPage)}
-    </div>
-    <div className="flex gap-2">
-      <button
-        onClick={() => setCurrentProductPage(1)}
-        disabled={currentProductPage === 1}
-        className="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-      >
-        «
-      </button>
-      <button
-        onClick={() => setCurrentProductPage(prev => Math.max(prev - 1, 1))}
-        disabled={currentProductPage === 1}
-        className="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-      >
-        Précédent
-      </button>
-      
-      {/* Numéros de pages */}
-      <div className="flex gap-1">
-        {Array.from({ length: Math.ceil(topProducts.length / productsPerPage) }, (_, i) => i + 1)
-          .filter(page => {
-            const totalPages = Math.ceil(topProducts.length / productsPerPage)
-            if (totalPages <= 5) return true
-            if (page === 1 || page === totalPages) return true
-            if (Math.abs(page - currentProductPage) <= 1) return true
-            return false
-          })
-          .map((page, idx, arr) => (
-            <span key={page} className="flex items-center">
-              {idx > 0 && arr[idx - 1] !== page - 1 && (
-                <span className="px-2 text-slate-500">...</span>
-              )}
-              <button
-                onClick={() => setCurrentProductPage(page)}
-                className={`px-3 py-2 rounded-lg text-sm ${
-                  currentProductPage === page
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                {page}
-              </button>
-            </span>
-          ))
-        }
-      </div>
-      
-      <button
-        onClick={() => setCurrentProductPage(prev => Math.min(prev + 1, Math.ceil(topProducts.length / productsPerPage)))}
-        disabled={currentProductPage === Math.ceil(topProducts.length / productsPerPage)}
-        className="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-      >
-        Suivant
-      </button>
-      <button
-        onClick={() => setCurrentProductPage(Math.ceil(topProducts.length / productsPerPage))}
-        disabled={currentProductPage === Math.ceil(topProducts.length / productsPerPage)}
-        className="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-      >
-        »
-      </button>
-    </div>
-  </div>
-</div>
             </div>
           )}
 
@@ -1816,13 +1808,13 @@ const AnalysteDashboard = () => {
                             .map((cat, i) => {
                               const totalCA = categoriesData.reduce((sum, c) => sum + (c.chiffreAffaires || 0), 0)
                               const percentage = totalCA > 0 ? ((cat.chiffreAffaires || 0) / totalCA * 100).toFixed(1) : "0.0"
-                              
+
                               return (
                                 <tr key={i} className="border-b border-slate-700 hover:bg-slate-700/40">
                                   <td className="px-4 py-3">
                                     <div className="flex items-center gap-3">
-                                      <div 
-                                        className="w-3 h-3 rounded-full" 
+                                      <div
+                                        className="w-3 h-3 rounded-full"
                                         style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
                                       />
                                       <span className="font-medium text-white">{cat.nom}</span>
@@ -1837,7 +1829,7 @@ const AnalysteDashboard = () => {
                                   <td className="px-4 py-3">
                                     <div className="flex items-center gap-2">
                                       <div className="flex-1 bg-slate-700 rounded-full h-2">
-                                        <div 
+                                        <div
                                           className="h-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
                                           style={{ width: `${percentage}%` }}
                                         />
@@ -1934,38 +1926,38 @@ const AnalysteDashboard = () => {
                     .sort((a, b) => (b.chiffreAffaires || 0) - (a.chiffreAffaires || 0))
                     .slice(0, 12)
                     .map((cat, i) => (
-                    <div key={i} className="bg-slate-700/40 rounded-lg p-5 hover:bg-slate-700/60 transition-colors">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
-                        />
-                        <h5 className="font-bold text-white text-lg truncate" title={cat.nom}>{cat.nom}</h5>
+                      <div key={i} className="bg-slate-700/40 rounded-lg p-5 hover:bg-slate-700/60 transition-colors">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
+                          />
+                          <h5 className="font-bold text-white text-lg truncate" title={cat.nom}>{cat.nom}</h5>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Produits</span>
+                            <span className="text-white font-semibold">{cat.nbProduits}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">CA</span>
+                            <span className="text-emerald-400 font-semibold">
+                              {(cat.chiffreAffaires || 0).toLocaleString('fr-FR')} €
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Ventes</span>
+                            <span className="text-blue-400 font-semibold">{cat.ventes || 0}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Marge moyenne</span>
+                            <span className="text-amber-400 font-semibold">
+                              {cat.margeMoyenne?.toFixed(1) || "0.0"}%
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Produits</span>
-                          <span className="text-white font-semibold">{cat.nbProduits}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">CA</span>
-                          <span className="text-emerald-400 font-semibold">
-                            {(cat.chiffreAffaires || 0).toLocaleString('fr-FR')} €
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Ventes</span>
-                          <span className="text-blue-400 font-semibold">{cat.ventes || 0}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Marge moyenne</span>
-                          <span className="text-amber-400 font-semibold">
-                            {cat.margeMoyenne?.toFixed(1) || "0.0"}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             </div>
@@ -2021,7 +2013,7 @@ const AnalysteDashboard = () => {
                       nom,description,prix,stock,categorie,seuilAlerte,image
                     </code>
                     <p className="text-xs text-slate-400 mt-2">
-                      Consultez le fichier <span className="font-mono bg-slate-700 px-1 rounded">exemple_produits.csv</span> et 
+                      Consultez le fichier <span className="font-mono bg-slate-700 px-1 rounded">exemple_produits.csv</span> et
                       <span className="font-mono bg-slate-700 px-1 rounded">IMPORT_CSV_README.md</span> pour plus de détails.
                     </p>
                   </div>
@@ -2080,7 +2072,7 @@ const AnalysteDashboard = () => {
                       nom,description,prix,stock,categorie,seuilAlerte,image
                     </code>
                     <p className="text-xs text-slate-400 mt-2">
-                      Consultez le fichier <span className="font-mono bg-slate-700 px-1 rounded">exemple_produits.csv</span> et 
+                      Consultez le fichier <span className="font-mono bg-slate-700 px-1 rounded">exemple_produits.csv</span> et
                       <span className="font-mono bg-slate-700 px-1 ml-1 rounded">IMPORT_CSV_README.md</span> pour plus de détails.
                     </p>
                   </div>
@@ -2099,46 +2091,46 @@ const AnalysteDashboard = () => {
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
-                  { 
-                    title: "Rapport Complet PDF", 
-                    desc: "Document PDF professionnel avec toutes les données", 
+                  {
+                    title: "Rapport Complet PDF",
+                    desc: "Document PDF professionnel avec toutes les données",
                     icon: FileText,
                     action: exportToPDF,
                     color: "from-blue-600 to-cyan-600"
                   },
-                  { 
-                    title: "Rapport Mensuel", 
-                    desc: "Performance complète du mois", 
+                  {
+                    title: "Rapport Mensuel",
+                    desc: "Performance complète du mois",
                     icon: Calendar,
                     action: () => exportData("csv"),
                     color: "from-purple-600 to-pink-600"
                   },
-                  { 
-                    title: "Analyse Produits", 
-                    desc: "Top produits et gestion des stocks", 
+                  {
+                    title: "Analyse Produits",
+                    desc: "Top produits et gestion des stocks",
                     icon: Package,
                     action: () => exportData("json"),
                     color: "from-emerald-600 to-green-600"
                   },
-                  { 
-                    title: "Analyse Clients", 
-                    desc: "Comportement et fidélité clients", 
+                  {
+                    title: "Analyse Clients",
+                    desc: "Comportement et fidélité clients",
                     icon: Users,
                     action: exportToImage,
                     color: "from-amber-600 to-orange-600"
                   },
-                  { 
-                    title: "Rapport Financier", 
-                    desc: "CA, marges et analyse de profit", 
+                  {
+                    title: "Rapport Financier",
+                    desc: "CA, marges et analyse de profit",
                     icon: DollarSign,
-                    action: () => {/* Action spécifique */},
+                    action: () => {/* Action spécifique */ },
                     color: "from-rose-600 to-red-600"
                   },
-                  { 
-                    title: "Analyse Catégories", 
-                    desc: "Performance par catégorie de produits", 
+                  {
+                    title: "Analyse Catégories",
+                    desc: "Performance par catégorie de produits",
                     icon: BarChart3,
-                    action: () => {/* Action spécifique */},
+                    action: () => {/* Action spécifique */ },
                     color: "from-violet-600 to-indigo-600"
                   },
                 ].map((report, i) => {
@@ -2164,31 +2156,6 @@ const AnalysteDashboard = () => {
                     </div>
                   )
                 })}
-              </div>
-
-              {/* Statistiques d'export */}
-              <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-                <h4 className="text-lg font-bold text-white mb-4">Historique des Exports</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-slate-700/40 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium">Rapport Complet PDF</p>
-                      <p className="text-slate-400 text-sm">Généré il y a 2 heures</p>
-                    </div>
-                    <button className="text-blue-400 hover:text-blue-300 text-sm">
-                      Télécharger à nouveau
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-slate-700/40 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium">Données CSV</p>
-                      <p className="text-slate-400 text-sm">Généré il y a 1 jour</p>
-                    </div>
-                    <button className="text-blue-400 hover:text-blue-300 text-sm">
-                      Télécharger à nouveau
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           )}

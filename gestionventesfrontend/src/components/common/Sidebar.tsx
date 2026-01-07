@@ -111,33 +111,32 @@ const Sidebar = ({ isOpen, onClose, activeSection, setActiveSection, cartCount =
       {/* Overlay */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 bg-black/50 z-40 transition-opacity ${
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`fixed inset-0 bg-black/50 z-40 transition-opacity md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
       />
 
       {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 h-full w-64 z-50
         bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-xl
-        transform transition-transform duration-300
+        transform transition-transform duration-300 md:translate-x-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {/* Logo */}
-        <div className="p-6 border-b border-slate-700 flex items-center justify-between">
+        <div className="h-20 px-6 border-b border-slate-800/50 flex items-center justify-between bg-slate-900">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center">
-              <Zap className="w-6 h-6 text-slate-950" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Zap className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              <h2 className="text-xl font-bold text-white tracking-tight">
                 TechShop
               </h2>
-              <p className="text-xs text-slate-400 capitalize">{user?.role}</p>
+              <p className="text-xs text-slate-400 font-medium capitalize">{user?.role}</p>
             </div>
           </div>
 
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-slate-400 hover:text-white md:hidden transition-colors">
             <X />
           </button>
         </div>
@@ -146,7 +145,7 @@ const Sidebar = ({ isOpen, onClose, activeSection, setActiveSection, cartCount =
         <nav className="p-4 space-y-2">
           {menuItems.map((item: any) => {
             const Icon = item.icon;
-            
+
             // Si c'est une section interne (client dashboard)
             if (item.id && isClientDashboard && setActiveSection) {
               return (
@@ -156,11 +155,10 @@ const Sidebar = ({ isOpen, onClose, activeSection, setActiveSection, cartCount =
                     setActiveSection(item.id);
                     onClose();
                   }}
-                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    activeSection === item.id
-                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg text-white'
-                      : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${activeSection === item.id
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg text-white'
+                    : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon className="w-5 h-5" />
@@ -174,18 +172,17 @@ const Sidebar = ({ isOpen, onClose, activeSection, setActiveSection, cartCount =
                 </button>
               );
             }
-            
+
             // Sinon, c'est un lien de navigation classique
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                  isActive(item.path)
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg'
-                    : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive(item.path)
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg'
+                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                  }`}
               >
                 <Icon className="w-5 h-5" />
                 <span className="text-sm font-medium">{item.label}</span>

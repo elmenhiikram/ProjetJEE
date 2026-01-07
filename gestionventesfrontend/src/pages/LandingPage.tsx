@@ -21,13 +21,17 @@ import {
   Loader,
   Heart,
   ShoppingCart,
-  User,
   ChevronLeft,
   ChevronRight,
   Monitor,
   Wifi,
   Search,
   X,
+  Eye,
+  Package,
+  Tag,
+  TrendingUp,
+  LogIn,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { productApi } from "../api/productApi"
@@ -65,6 +69,10 @@ export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [topProduct, setTopProduct] = useState<Product | null>(null)
+  const [categoryScrollIndex, setCategoryScrollIndex] = useState(0)
+  const [productScrollIndex, setProductScrollIndex] = useState(0)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [showProductModal, setShowProductModal] = useState(false)
 
   const defaultCategories = [
     { id: 1, name: "Phones", icon: Smartphone, color: "from-blue-500 to-cyan-500" },
@@ -171,17 +179,6 @@ export default function LandingPage() {
     
     setProducts(filtered)
   }, [searchQuery, selectedCategory, allProducts])
-
-  const getBadge = (index: number) => {
-    const badges = ["30% Off", "20% Off", "15% Off", "25% Off"]
-    return badges[index] || "Sale"
-  }
-
-  const getOriginalPrice = (price: number, index: number) => {
-    const discounts = [0.3, 0.2, 0.15, 0.25]
-    const discount = discounts[index] || 0.2
-    return (price / (1 - discount)).toFixed(2)
-  }
 
   return (
     <div className="min-h-screen bg-black overflow-hidden">
@@ -364,13 +361,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Categories Section */}
+      {/* Categories Carousel Section */}
       <section className="py-12 lg:py-16 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <div>
               <div className="inline-flex items-center gap-2 text-blue-400 text-sm mb-2">
-                <span className="w-2 h-2 bg-blue-400 rounded-full" />
+                <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
                 Catégories
               </div>
               <h2 className="text-2xl md:text-3xl font-black text-white">
@@ -382,52 +379,121 @@ export default function LandingPage() {
             </div>
             <button
               onClick={() => setSelectedCategory(null)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
                 selectedCategory === null
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800/60 text-slate-400 hover:text-white'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/25'
+                  : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
               Toutes
             </button>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-4">
-            {categories.length > 0 ? (
-              categories.map((category) => {
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(selectedCategory === category.id ? null : (category.id ?? null))}
-                    className={`group cursor-pointer transition-all ${
-                      selectedCategory === category.id ? 'scale-105' : ''
-                    }`}
-                  >
-                    <div className={`p-4 rounded-2xl border transition-all duration-300 hover:-translate-y-1 flex items-center justify-center ${
-                      selectedCategory === category.id
-                        ? 'bg-blue-600/20 border-blue-500/50'
-                        : 'bg-slate-900/60 backdrop-blur-xl border-slate-700/50 hover:border-blue-500/50'
-                    }`}>
-                      <p className={`text-sm font-semibold text-center transition-colors ${
-                        selectedCategory === category.id ? 'text-white' : 'text-slate-300 group-hover:text-white'
+          {/* Carousel avec boutons de navigation */}
+          <div className="relative group">
+            {/* Bouton Précédent */}
+            <button
+              onClick={() => setCategoryScrollIndex(Math.max(0, categoryScrollIndex - 1))}
+              disabled={categoryScrollIndex === 0}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/30 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed -translate-x-6"
+            >
+              <ChevronLeft className="w-6 h-6 text-white" />
+            </button>
+
+            {/* Bouton Suivant */}
+            <button
+              onClick={() => {
+                const maxIndex = Math.max(0, (categories.length > 0 ? categories : defaultCategories).length - 5);
+                setCategoryScrollIndex(Math.min(maxIndex, categoryScrollIndex + 1));
+              }}
+              disabled={categoryScrollIndex >= Math.max(0, (categories.length > 0 ? categories : defaultCategories).length - 5)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/30 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed translate-x-6"
+            >
+              <ChevronRight className="w-6 h-6 text-white" />
+            </button>
+
+            <div className="overflow-hidden">
+              <div 
+                className="flex gap-4 transition-transform duration-500 ease-out"
+                style={{ transform: `translateX(-${categoryScrollIndex * 176}px)` }}
+              >
+                {(categories.length > 0 ? categories : defaultCategories).map((category, index) => {
+                  const isSelected = categories.length > 0 
+                    ? selectedCategory === category.id
+                    : false;
+                  const Icon = defaultCategories[index]?.icon || Sparkles;
+                  const colorClass = defaultCategories[index]?.color || "from-blue-500 to-cyan-500";
+                  
+                  return (
+                    <button
+                      key={category.id || index}
+                      onClick={() => setSelectedCategory(
+                        categories.length > 0 
+                          ? (selectedCategory === category.id ? null : (category.id ?? null))
+                          : null
+                      )}
+                      className={`flex-shrink-0 w-40 transition-all duration-300 ${
+                        isSelected ? 'scale-110' : 'hover:scale-105'
+                      }`}
+                    >
+                      <div className={`relative p-6 rounded-2xl border transition-all duration-300 ${
+                        isSelected
+                          ? 'bg-gradient-to-br ' + colorClass + ' border-transparent shadow-2xl shadow-blue-500/40'
+                          : 'bg-slate-900/60 backdrop-blur-xl border-slate-700/50 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/20'
                       }`}>
-                        {category.nom}
-                      </p>
-                    </div>
-                  </button>
-                )
-              })
-            ) : (
-              defaultCategories.map((category, index) => (
-                <div key={index} className="group cursor-pointer">
-                  <div className="p-4 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 group-hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-1 flex items-center justify-center">
-                    <p className="text-sm font-semibold text-slate-300 group-hover:text-white text-center transition-colors">
-                      {category.name}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
+                        <div className={`w-14 h-14 mx-auto mb-3 rounded-xl flex items-center justify-center transition-all ${
+                          isSelected
+                            ? 'bg-white/20'
+                            : 'bg-gradient-to-br ' + colorClass
+                        }`}>
+                          <Icon className={`w-7 h-7 ${isSelected ? 'text-white' : 'text-white'}`} />
+                        </div>
+                        <p className={`text-sm font-bold text-center transition-colors ${
+                          isSelected ? 'text-white' : 'text-slate-300'
+                        }`}>
+                          {'nom' in category ? category.nom : category.name}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Indicateurs de pagination */}
+            <div className="flex justify-center gap-2 mt-6">
+              {Array.from({ length: Math.ceil((categories.length > 0 ? categories : defaultCategories).length / 5) }).map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCategoryScrollIndex(idx)}
+                  className={`h-2 rounded-full transition-all ${
+                    idx === Math.floor(categoryScrollIndex / 5)
+                      ? 'w-8 bg-gradient-to-r from-blue-500 to-cyan-500'
+                      : 'w-2 bg-slate-700 hover:bg-slate-600'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-12 lg:py-16 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {features.map((feature, index) => (
+          <div
+            key={index}
+            className="group p-6 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="w-12 h-12 mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <feature.icon className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">{feature.title}</h3>
+            <p className="text-slate-400 text-sm">{feature.description}</p>
+          </div>
+        ))}
           </div>
         </div>
       </section>
@@ -437,13 +503,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <div className="inline-flex items-center gap-2 text-blue-400 text-sm mb-2">
-                <span className="w-2 h-2 bg-blue-400 rounded-full" />
+              <div className="inline-flex items-center gap-2 text-emerald-400 text-sm mb-2">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full" />
                 Nos Produits
               </div>
               <h2 className="text-2xl md:text-3xl font-black text-white">
-                Explorez nos{" "}
-                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                Explorez nos
+                <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
                   Produits
                 </span>
               </h2>
@@ -506,50 +572,249 @@ export default function LandingPage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {products.map((product, index) => (
-                  <div key={product.id} className="group relative">
-                    <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-2xl overflow-hidden border border-slate-700/50 group-hover:border-blue-500/50 transition-all duration-300 shadow-lg">
-                      <div className="relative h-44 md:h-52 bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
-                        <img
-                          src={product.image || `https://placehold.co/300x200/1e293b/ffffff?text=${encodeURIComponent(product.nom.substring(0, 10))}`}
-                          alt={product.nom}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
+              {/* Product Carousel */}
+              <div className="relative group">
+                {/* Navigation Buttons */}
+                <button
+                  onClick={() => setProductScrollIndex(Math.max(0, productScrollIndex - 1))}
+                  disabled={productScrollIndex === 0}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg hover:shadow-blue-500/50 transition-all duration-300 opacity-0 group-hover:opacity-100 disabled:opacity-0 disabled:cursor-not-allowed -translate-x-1/2"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                
+                <button
+                  onClick={() => setProductScrollIndex(Math.min(Math.ceil(products.length / 4) - 1, productScrollIndex + 1))}
+                  disabled={productScrollIndex >= Math.ceil(products.length / 4) - 1}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg hover:shadow-blue-500/50 transition-all duration-300 opacity-0 group-hover:opacity-100 disabled:opacity-0 disabled:cursor-not-allowed translate-x-1/2"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+
+                {/* Carousel Container */}
+                <div className="overflow-hidden px-2">
+                  <div 
+                    className="flex gap-4 md:gap-6 transition-transform duration-500 ease-out"
+                    style={{ 
+                      transform: `translateX(-${productScrollIndex * 100}%)` 
+                    }}
+                  >
+                    {products.map((product) => (
+                      <div 
+                        key={product.id} 
+                        className="flex-shrink-0 w-[calc(50%-8px)] md:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)] cursor-pointer"
+                        onClick={() => {
+                          setSelectedProduct(product)
+                          setShowProductModal(true)
+                        }}
+                      >
+                        <div className="group/card relative h-full">
+                          <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-2xl overflow-hidden border border-slate-700/50 group-hover/card:border-blue-500/50 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 hover:scale-105">
+                            <div className="relative h-44 md:h-52 bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
+                              <img
+                                src={product.image || `https://placehold.co/300x200/1e293b/ffffff?text=${encodeURIComponent(product.nom.substring(0, 10))}`}
+                                alt={product.nom}
+                                className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-500"
+                              />
+                              {/* Quick View Badge */}
+                              <div className="absolute top-2 right-2 p-2 rounded-full bg-blue-600/80 backdrop-blur-sm opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
+                                <Eye className="w-4 h-4 text-white" />
+                              </div>
+                            </div>
+
+                            <div className="p-4 space-y-2">
+                              <div className="flex items-center gap-1">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-3 h-3 ${i < Math.round(product.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-slate-600"}`}
+                                  />
+                                ))}
+                              </div>
+
+                              <h3 className="text-sm font-semibold text-white line-clamp-1">{product.nom}</h3>
+
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                                  {product.prix} DHS
+                                </span>
+                              </div>
+
+                              <div className="flex gap-1.5 pt-1">
+                                <div className="w-3 h-3 rounded-full bg-red-500 border border-slate-600" />
+                                <div className="w-3 h-3 rounded-full bg-blue-500 border border-slate-600" />
+                                <div className="w-3 h-3 rounded-full bg-slate-700 border border-slate-600" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-
-                      <div className="p-4 space-y-2">
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-3 h-3 ${i < Math.round(product.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-slate-600"}`}
-                            />
-                          ))}
-                        </div>
-
-                        <h3 className="text-sm font-semibold text-white line-clamp-1">{product.nom}</h3>
-
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                            {product.prix} DHS
-                          </span>
-                        </div>
-
-                        <div className="flex gap-1.5 pt-1">
-                          <div className="w-3 h-3 rounded-full bg-red-500 border border-slate-600" />
-                          <div className="w-3 h-3 rounded-full bg-blue-500 border border-slate-600" />
-                          <div className="w-3 h-3 rounded-full bg-slate-700 border border-slate-600" />
-                        </div>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* Pagination Indicators */}
+                <div className="flex justify-center gap-2 mt-6">
+                  {Array.from({ length: Math.ceil(products.length / 4) }).map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setProductScrollIndex(index)}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        index === productScrollIndex 
+                          ? 'w-8 bg-gradient-to-r from-blue-600 to-cyan-600' 
+                          : 'w-2 bg-slate-700 hover:bg-slate-600'
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
             </>
           )}
         </div>
       </section>
+
+      {/* Product Detail Modal */}
+      {showProductModal && selectedProduct && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setShowProductModal(false)}
+        >
+          <div 
+            className="relative max-w-3xl w-full max-h-[90vh] overflow-y-auto bg-slate-900/95 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl shadow-blue-500/10 animate-in zoom-in duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowProductModal(false)}
+              className="absolute top-3 right-3 z-10 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 border border-slate-600/50 transition-all duration-200 group"
+            >
+              <X className="w-5 h-5 text-slate-400 group-hover:text-white" />
+            </button>
+
+            <div className="grid md:grid-cols-2 gap-6 p-6">
+              {/* Product Image */}
+              <div className="relative">
+                <div className="relative w-full h-64 md:h-80 rounded-xl overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50">
+                  <img
+                    src={selectedProduct.image || `https://placehold.co/400x400/1e293b/ffffff?text=${encodeURIComponent(selectedProduct.nom)}`}
+                    alt={selectedProduct.nom}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Badge */}
+                  {selectedProduct.quantite && selectedProduct.quantite > 0 && (
+                    <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/50">
+                      <span className="text-green-400 text-xs font-semibold">En Stock</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Thumbnail Gallery (optional - can be added later) */}
+                <div className="flex gap-2 mt-3">
+                  {[1, 2, 3].map((i) => (
+                    <div 
+                      key={i} 
+                      className="w-16 h-16 rounded-lg border-2 border-slate-700 hover:border-blue-500 transition-colors cursor-pointer overflow-hidden bg-slate-800"
+                    >
+                      <img
+                        src={selectedProduct.image || `https://placehold.co/80x80/1e293b/ffffff?text=${i}`}
+                        alt={`Thumbnail ${i}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Product Details */}
+              <div className="flex flex-col space-y-4">
+                {/* Category Badge */}
+                <div className="inline-flex items-center gap-2 w-fit">
+                  <Tag className="w-4 h-4 text-blue-400" />
+                  <span className="text-blue-400 text-sm font-medium">
+                    {categories.find(c => c.id === selectedProduct.categorie?.id)?.nom || "Catégorie"}
+                  </span>
+                </div>
+
+                {/* Title */}
+                <div>
+                  <h2 className="text-2xl font-black text-white mb-2">
+                    {selectedProduct.nom}
+                  </h2>
+                  
+                  {/* Rating */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${i < Math.round(selectedProduct.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-slate-600"}`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-slate-400 text-xs">
+                      ({selectedProduct.rating?.toFixed(1) || "0.0"})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-1.5">
+                  <h3 className="text-white text-sm font-semibold flex items-center gap-2">
+                    <Package className="w-4 h-4 text-blue-400" />
+                    Description
+                  </h3>
+                  <p className="text-slate-300 text-xs leading-relaxed">
+                    {selectedProduct.description || "Découvrez ce produit exceptionnel qui allie qualité et performance. Conçu avec les dernières technologies pour répondre à tous vos besoins."}
+                  </p>
+                </div>
+
+                {/* Specifications */}
+                <div className="grid grid-cols-2 gap-3 p-3 bg-slate-800/40 rounded-xl border border-slate-700/50">
+                  <div className="space-y-1">
+                    <p className="text-slate-400 text-xs">Prix</p>
+                    <p className="text-xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                      {selectedProduct.prix} DHS
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-slate-400 text-xs">Stock</p>
+                    <p className="text-white text-sm font-semibold">
+                      {selectedProduct.quantite || 0} unités
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-slate-400 text-xs">Référence</p>
+                    <p className="text-white text-xs font-mono">
+                      #{selectedProduct.id}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-slate-400 text-xs">Popularité</p>
+                    <div className="flex items-center gap-1">
+                      <TrendingUp className="w-4 h-4 text-green-400" />
+                      <span className="text-white text-xs font-semibold">Haute</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Login Button */}
+                <div className="pt-4">
+                  <button 
+                    onClick={() => {
+                      setShowProductModal(false);
+                      window.location.href = '/login';
+                    }}
+                    className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-xl text-white font-bold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center gap-2 group"
+                  >
+                    <LogIn className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    Commander
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer id="contact" className="relative z-10 border-t border-slate-800/50 bg-slate-950/80 backdrop-blur-xl mt-12">

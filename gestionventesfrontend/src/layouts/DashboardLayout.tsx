@@ -54,7 +54,7 @@ const DashboardLayout = () => {
 
     const path = location.pathname;
     let title = pathToTitle[path] || 'Tableau de Bord';
-    
+
     // Si on est sur le dashboard client, utiliser la section active
     if (path === '/dashboard/client' && clientDashboardState?.activeSection) {
       const sectionTitles: { [key: string]: string } = {
@@ -66,12 +66,12 @@ const DashboardLayout = () => {
       };
       title = sectionTitles[clientDashboardState.activeSection] || 'Tableau de Bord Client';
     }
-    
+
     setPageTitle(title);
   }, [location.pathname, clientDashboardState?.activeSection]);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex">
+    <div className="min-h-screen bg-slate-900 text-white flex md:pl-64 transition-all duration-300">
       {/* Sidebar */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -82,19 +82,19 @@ const DashboardLayout = () => {
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col w-full transition-all duration-300">
         {/* Top Bar */}
-        <header className="sticky top-0 z-50 flex items-center justify-between gap-4 p-4 border-b border-slate-700 bg-slate-800/95 backdrop-blur-sm">
+        <header className="sticky top-0 z-50 flex items-center justify-between gap-4 h-20 px-6 border-b border-slate-800/50 bg-slate-900 shadow-sm">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="text-gray-300 hover:text-white"
+              className="text-gray-300 hover:text-white md:hidden transition-colors"
               aria-label="Ouvrir le menu"
             >
               <Menu />
             </button>
             <div>
-              <h1 className="text-2xl font-bold">{pageTitle}</h1>
+              <h1 className="text-xl font-bold text-white tracking-tight">{pageTitle}</h1>
             </div>
           </div>
 

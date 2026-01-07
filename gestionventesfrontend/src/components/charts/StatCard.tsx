@@ -13,35 +13,51 @@ interface StatCardProps {
 
 const StatCard = ({ title, value, icon, trend, color = 'blue' }: StatCardProps) => {
   const colorClasses = {
-    blue: 'bg-gradient-to-br from-blue-600 to-blue-700',
-    green: 'bg-gradient-to-br from-green-600 to-green-700',
-    yellow: 'bg-gradient-to-br from-yellow-600 to-amber-700',
-    red: 'bg-gradient-to-br from-red-600 to-red-700',
-    purple: 'bg-gradient-to-br from-purple-600 to-purple-700',
+    blue: {
+      gradient: 'from-blue-500 to-blue-600',
+      icon: 'bg-blue-400',
+      shadow: 'shadow-blue-500/50',
+    },
+    green: {
+      gradient: 'from-green-500 to-green-600',
+      icon: 'bg-green-400',
+      shadow: 'shadow-green-500/50',
+    },
+    yellow: {
+      gradient: 'from-yellow-500 to-orange-600',
+      icon: 'bg-yellow-400',
+      shadow: 'shadow-yellow-500/50',
+    },
+    red: {
+      gradient: 'from-red-500 to-red-600',
+      icon: 'bg-red-400',
+      shadow: 'shadow-red-500/50',
+    },
+    purple: {
+      gradient: 'from-purple-500 to-purple-600',
+      icon: 'bg-purple-400',
+      shadow: 'shadow-purple-500/50',
+    },
   };
 
-  const iconColorClasses = {
-    blue: 'bg-blue-500/20 text-blue-300',
-    green: 'bg-green-500/20 text-green-300',
-    yellow: 'bg-yellow-500/20 text-yellow-300',
-    red: 'bg-red-500/20 text-red-300',
-    purple: 'bg-purple-500/20 text-purple-300',
-  };
+  const currentColor = colorClasses[color];
 
   return (
-    <div className={`${colorClasses[color]} rounded-xl shadow-lg p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-white/10`}>
+    <div className={`bg-gradient-to-br ${currentColor.gradient} rounded-xl shadow-lg ${currentColor.shadow} p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300`}>
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-white/80 mb-2">{title}</p>
-          <p className="text-3xl font-bold text-white">{value}</p>
+          <p className="text-sm font-semibold text-white/90 mb-2">{title}</p>
+          <p className="text-4xl font-bold text-white drop-shadow-lg">{value}</p>
           {trend && (
-            <p className={`text-sm mt-2 font-semibold ${trend.isPositive ? 'text-green-200' : 'text-red-200'}`}>
-              {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
+            <p className={`text-sm mt-3 font-medium ${trend.isPositive ? 'text-white' : 'text-white/80'}`}>
+              <span className="inline-flex items-center gap-1">
+                {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
+              </span>
             </p>
           )}
         </div>
         {icon && (
-          <div className={`${iconColorClasses[color]} p-4 rounded-full text-2xl backdrop-blur-sm`}>
+          <div className={`${currentColor.icon} p-4 rounded-full text-white text-2xl shadow-xl backdrop-blur-sm bg-opacity-50`}>
             {icon}
           </div>
         )}
