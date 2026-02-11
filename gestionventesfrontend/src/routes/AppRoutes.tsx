@@ -38,6 +38,16 @@ const AppRoutes = () => {
                 <Dashboard />
               } />
               
+              {/* Routes analytics - Accessibles à tous pour le développement */}
+              <Route path="/dashboard/analyste" element={<AnalysteDashboard />} />
+              <Route path="/analytics" element={<AnalysteDashboard />} />
+              <Route path="/analytics/produits" element={<AnalysteDashboard />} />
+              <Route path="/analytics/ventes" element={<AnalysteDashboard />} />
+              <Route path="/analytics/clients" element={<AnalysteDashboard />} />
+              <Route path="/analytics/categories" element={<AnalysteDashboard />} />
+              <Route path="/analytics/etl" element={<AnalysteDashboard />} />
+              <Route path="/analytics/rapports" element={<AnalysteDashboard />} />
+              
               {/* Routes spécifiques admin/vendeur */}
               {(userRole === 'admin' || userRole === 'vendeur') && (
                 <>

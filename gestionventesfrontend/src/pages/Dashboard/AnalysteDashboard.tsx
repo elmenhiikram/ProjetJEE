@@ -264,7 +264,21 @@ const AnalysteDashboard = () => {
     performanceCategories: "composed",
     topClients: "horizontalBar",
   })
+  const [analystInfo, setAnalystInfo] = useState({
+    nom: "Jean Dupont",
+    poste: "Analyste Senior",
+    email: "jean.dupont@entreprise.com",
+    dateGeneration: new Date().toLocaleDateString('fr-FR'),
+    periodeRapport: "30 derniers jours"
+  })
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [exportConfig, setExportConfig] = useState({
+    includeCharts: true,
+    includeTables: true,
+    includeKPIs: true,
+    includeAlerts: true,
+    format: "pdf" as "pdf" | "html"
+  })
 
   const dashboardRef = useRef<HTMLDivElement>(null)
 
@@ -540,6 +554,13 @@ const AnalysteDashboard = () => {
       doc.setFontSize(12)
       doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 105, 30, { align: 'center' })
 
+      // Informations de l'analyste
+      doc.setFontSize(10)
+      doc.setTextColor(100, 100, 100)
+      doc.text(`Analyste: ${analystInfo.nom}`, 20, 50)
+      doc.text(`Poste: ${analystInfo.poste}`, 20, 56)
+      doc.text(`Période: ${analystInfo.periodeRapport}`, 20, 62)
+      
       // Résumé exécutif
       doc.setFontSize(14)
       doc.setTextColor(0, 0, 0)
@@ -2014,65 +2035,6 @@ const AnalysteDashboard = () => {
                     </code>
                     <p className="text-xs text-slate-400 mt-2">
                       Consultez le fichier <span className="font-mono bg-slate-700 px-1 rounded">exemple_produits.csv</span> et
-                      <span className="font-mono bg-slate-700 px-1 rounded">IMPORT_CSV_README.md</span> pour plus de détails.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ETL / IMPORT CSV */}
-          {activeSection === "etl" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                    <Upload className="w-7 h-7 text-cyan-400" />
-                    Import CSV et ETL
-                  </h2>
-                  <p className="text-slate-400 mt-1">
-                    Importer des données de ventes via fichier CSV avec traitement ETL automatique
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-6">
-                <CsvEtlUpload />
-
-                <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-blue-400" />
-                    À propos du processus ETL
-                  </h3>
-                  <div className="space-y-3 text-slate-300">
-                    <div>
-                      <h4 className="font-semibold text-white mb-1">Extract (Extraction)</h4>
-                      <p className="text-sm text-slate-400">
-                        Lecture et validation du fichier CSV uploadé avec parsing ligne par ligne.
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white mb-1">Transform (Transformation)</h4>
-                      <p className="text-sm text-slate-400">
-                        Nettoyage des données, validation des types, normalisation et détection des doublons.
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white mb-1">Load (Chargement)</h4>
-                      <p className="text-sm text-slate-400">
-                        Insertion des nouvelles données et mise à jour des existantes avec rapport détaillé.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                    <h4 className="font-semibold text-blue-300 mb-2">Format CSV attendu</h4>
-                    <code className="text-xs text-slate-300 block">
-                      nom,description,prix,stock,categorie,seuilAlerte,image
-                    </code>
-                    <p className="text-xs text-slate-400 mt-2">
-                      Consultez le fichier <span className="font-mono bg-slate-700 px-1 rounded">exemple_produits.csv</span> et
                       <span className="font-mono bg-slate-700 px-1 ml-1 rounded">IMPORT_CSV_README.md</span> pour plus de détails.
                     </p>
                   </div>
@@ -2118,20 +2080,6 @@ const AnalysteDashboard = () => {
                     icon: Users,
                     action: exportToImage,
                     color: "from-amber-600 to-orange-600"
-                  },
-                  {
-                    title: "Rapport Financier",
-                    desc: "CA, marges et analyse de profit",
-                    icon: DollarSign,
-                    action: () => {/* Action spécifique */ },
-                    color: "from-rose-600 to-red-600"
-                  },
-                  {
-                    title: "Analyse Catégories",
-                    desc: "Performance par catégorie de produits",
-                    icon: BarChart3,
-                    action: () => {/* Action spécifique */ },
-                    color: "from-violet-600 to-indigo-600"
                   },
                 ].map((report, i) => {
                   const IconComponent = report.icon

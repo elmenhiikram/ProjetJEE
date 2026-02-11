@@ -34,8 +34,8 @@ public class SecurityConfig {
                 // Endpoints publics
                 .requestMatchers("/api/auth/**").permitAll()
 
-                // ETL: réservé à l'analyste
-                .requestMatchers("/api/etl/**").hasRole("ANALYST")
+                // ETL: réservé à l'analyste (ANALYST ou ANALYSTE)
+                .requestMatchers("/api/etl/**").hasAnyRole("ANALYST", "ANALYSTE", "ADMIN")
 
                 // CRUD produit réservé à ADMIN + VENDEUR
                 .requestMatchers(HttpMethod.POST, "/produits/**").hasAnyRole("ADMIN", "VENDEUR")

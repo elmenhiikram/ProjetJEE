@@ -185,6 +185,22 @@ const App = () => {
               }
             />
             <Route
+              path="/analytics/etl"
+              element={
+                <ProtectedRoute allowedRoles={['analyste']}>
+                  <AnalysteDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics/etl"
+              element={
+                <ProtectedRoute allowedRoles={['analyste']}>
+                  <AnalysteDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/client"
               element={
                 <ProtectedRoute allowedRoles={['client']}>
